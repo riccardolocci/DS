@@ -1,0 +1,46 @@
+{
+  "name": "ds-project-2020",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@material-ui/core": "^4.6.1",
+    "@material-ui/icons": "^4.5.1",
+    "classnames": "^2.2.6",
+    "plotly.js": "^1.54.5",
+    "react": "^16.12.0",
+    "react-color": "^2.18.1",
+    "react-dom": "^16.12.0",
+    "react-dropzone": "^10.2.1",
+    "react-plotly.js": "^2.4.0",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "^3.4.1",
+    "typescript": "^3.7.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "homepage": "http://riccardolocci.github.io/DS",
+  "author": {
+    "name": "Riccardo Locci",
+    "email": "riccardo.locci.95@gmail.com",
+    "url": "https://github.com/riccardolocci"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
