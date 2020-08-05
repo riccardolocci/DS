@@ -1,18 +1,190 @@
 import React, { useState } from 'react';
 import PlotGraph from './PlotGraph';
 
-import { Button } from '@material-ui/core';
+import Dropzone from './Dropzone';
+import ExamplesManager from './ExamplesManager';
+import RandomManager from './RandomManager';
+
+import { Button, Paper } from '@material-ui/core';
 
 import { getY } from '../utils';
+
+import { makeStyles, createStyles } from '@material-ui/core/styles';
+
+const useStyles = makeStyles((theme) => createStyles({
+    button: {
+        float: 'left',
+        marginTop: 10,
+        marginRight: 10,
+        border: '1px solid rgba(0,0,0,0.3)'
+    },
+    buttonRight: {
+        float: 'right',
+        marginTop: 10,
+        border: '1px solid rgba(0,0,0,0.3)'
+    },
+    colorPicker: {
+        position: 'absolute',
+        top: 50,
+        zIndex: 1
+    },
+    drop: {
+        height: '40vh',
+        width: '80%',
+        marginTop: 50,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        transition: '1s'
+    },
+    dropClosed: {
+        height: 0,
+        width: '80%',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        transition: '1s'
+    },
+    generator: {
+        height: '10vh',
+        width: '80%',
+        marginTop: 50,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        transition: '1s'
+    },
+    graph: {
+        width: '80%',
+        height: 'calc(100% - 200px)',
+        margin: 'auto',
+        whiteSpace: 'nowrap'
+    },
+    infoBox: {
+        textAlign: 'left',
+        width: '50%',
+        display: 'inline-block',
+        whiteSpace: 'normal',
+        verticalAlign: 'top'
+    },
+    // infoBox table {
+    //     width: 100%
+    // },
+    legend: {
+        display: 'inline-block',
+        height: 30,
+        margin: '15px 10px 0 0',
+        width: 120,
+        textAlign: 'initial'
+    },
+    legendColor: {
+        float: 'left',
+        borderRadius: 10,
+        height: 20,
+        width: 20,
+        margin: '5px 10px'
+    },
+    legendKey: {
+        float: 'left',
+        height: 20,
+        width: 70,
+        margin: '5px 0',
+        fontSize: 15
+    },
+    legendPicked: {
+        display: 'inline-block',
+        height: 30,
+        margin: '15px 10px 0 0',
+        width: 120,
+        textAlign: 'initial',
+        borderRadius: 5,
+        backgroundColor: 'rgba(0,0,0,0.1)'
+    },
+    loading: {
+        width: 50,
+        float: 'right',
+        margin: '10px 10px'
+    },
+    menu: {
+        height: 350,
+    },
+    paper: {
+        backgroundColor: 'rgb(200, 0, 0)',
+        color: 'white',
+        marginTop: 50,
+        width: '80%',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        fontSize: 20,
+    },
+    paperDiv: {
+        padding: '15px 0 15px 0',
+        width: '100%',
+        transition: '0.2s'
+    },
+    paperDivHide: {
+        height: 0,
+        width: '100%',
+        transition: '0.2s',
+        overflow: 'hidden'
+    },
+    // paths tbody {
+    //     display: block,
+    //     height: 20vh,
+    //     overflow-y: auto,
+    // },
+    // paths thead, tbody tr {
+    //     display: table,
+    //     width: 100%,
+    //     table-layout: fixed,
+    // },
+    // paths tbody td{
+    //     padding: 2,
+    // },
+    // paths tbody tr:nth-child(odd):not(sourceRow):not(selectedRow){
+    //     background-color: rgb(235, 241, 250),
+    // },
+    root: {
+        height: '100%',
+        fontSize: 'calc(12px + (18 - 12) * ((100vw - 1600px) / (2600 - 1600)))'
+    },
+    select: {
+        width: 150,
+        float: 'left',
+        margin: '0 50px 0 0'
+    },
+    selectableRow: {
+        cursor: 'pointer'
+    },
+    selectedRow: {
+        backgroundColor: 'rgb(148, 235, 153)'
+    },
+    sourceRow: {
+        backgroundColor: 'rgb(250, 240, 217)'
+    },
+    spacer: {
+        position: 'relative',
+        height: 80
+    },
+    switch: {
+        float: 'left',
+        padding: '20px 20px 0 0'
+    },
+    unselectableRow: {
+        cursor: 'not-allowed'
+    }
+}));
 
 const DEBUG=true
 const PASS=50
 
 let LPP = () => {
+    let [file, setFile] = useState();
     let [lines, setLines] = useState([]);
+    let [loading, setLoading] = useState(false);
     let [maxX, setMaxX] = useState(150);
+    let [message, setMessage] = useState('');
     let [polygon, setPolygon] = useState([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
     let [zoomLevel, setZoomLevel] = useState(3)
+    
+    const classes = useStyles();
 
     //https://stackoverflow.com/questions/44474864/compute-determinant-of-a-matrix?newreg=93b9aa02ef824ff1b0df794ca5558376
     const determinant = m =>  m.length === 1 ? m[0][0] :
@@ -58,6 +230,12 @@ let LPP = () => {
             }
         }
         
+    }
+
+    let getFile = f => {
+        setLoading(true);
+        setFile(f);
+        setLoading(false);
     }
 
     let onAdd = () => {
@@ -144,26 +322,59 @@ let LPP = () => {
         setPolygon([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
     }
 
-    let onZoom = (i) => {
+    let onZoom = i => {
         setZoomLevel(zoomLevel+i);
         setMaxX(zoomLevel*PASS);
     }
 
+    let showMessage = message => {
+        setMessage(message);
+        setTimeout(() => setMessage(''), 5000);
+    }
+
     return (
         <>
-            <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
-            <Button variant='outlined' onClick={onClear}>CLEAR</Button>
-            <Button variant='outlined' onClick={() => onZoom(1)}>+</Button>
-            <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
-            <PlotGraph 
-                lines={lines}
-                maxX={maxX}
-                polygon={polygon}
-                level={zoomLevel}
-            />
-            <div>
-                {lines.length}
-            </div>
+            {!file && <> 
+                <div className={file ? classes.dropClosed : classes.drop}>
+                    <Dropzone
+                        getFile={getFile}
+                        hide={file}
+                        showMessage={showMessage}
+                    />
+                </div>
+
+                <div className={file ? classes.dropClosed : classes.generator}>
+                    <ExamplesManager getFile={getFile} loading={loading} />
+                </div>
+
+                <div className={file ? classes.dropClosed : classes.generator}>
+                    <RandomManager getFile={getFile} loading={loading} />
+                </div>
+                
+                <div className={classes.spacer}>
+                    <Paper className={classes.paper}>
+                        <div className={message ? classes.paperDiv : classes.paperDivHide}>
+                            {message}
+                        </div>
+                    </Paper>
+                </div>
+            </>}
+
+            {file && <>
+                <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
+                <Button variant='outlined' onClick={onClear}>CLEAR</Button>
+                <Button variant='outlined' onClick={() => onZoom(1)}>+</Button>
+                <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
+                <PlotGraph 
+                    lines={lines}
+                    maxX={maxX}
+                    polygon={polygon}
+                    level={zoomLevel}
+                />
+                <div>
+                    {lines.length}
+                </div>
+            </>}
         </>
     )
 }
