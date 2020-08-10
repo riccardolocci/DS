@@ -234,6 +234,7 @@ let LPP = () => {
 
     let getFile = f => {
         setLoading(true);
+        if(DEBUG) console.log('FILE:', f)
         setFile(f);
         setLoading(false);
     }
@@ -367,9 +368,10 @@ let LPP = () => {
                 <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
                 <PlotGraph 
                     lines={lines}
+                    level={zoomLevel}
                     maxX={maxX}
                     polygon={polygon}
-                    level={zoomLevel}
+                    title={(file.type === 'ILP' ? 'Integer ' : '') + 'Linear Programming Problem'}
                 />
                 <div>
                     {lines.length}
