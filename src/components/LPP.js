@@ -182,7 +182,8 @@ let LPP = () => {
     let [maxX, setMaxX] = useState(150);
     let [message, setMessage] = useState('');
     let [polygon, setPolygon] = useState([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
-    let [zoomLevel, setZoomLevel] = useState(3)
+    let [stateIndex, setStateIndex] = useState(0);
+    let [zoomLevel, setZoomLevel] = useState(3);
     
     const classes = useStyles();
 
@@ -239,11 +240,16 @@ let LPP = () => {
         setLoading(false);
     }
 
-    let onAdd = () => {
-        let a = parseInt(Math.random()*60) - 10,
-            b = parseInt(Math.random()*30) - 10,
-            c = [-1,1][Math.floor(Math.random() * 2)] * parseInt(Math.random()*100),
-            s = [-1,1][Math.floor(Math.random() * 2)];
+    let onAdd = (
+        a = parseInt(Math.random()*60) - 10,
+        b = parseInt(Math.random()*30) - 10,
+        c = [-1,1][Math.floor(Math.random() * 2)] * parseInt(Math.random()*100),
+        s = [-1,1][Math.floor(Math.random() * 2)]
+    ) => {
+        // let a = parseInt(Math.random()*60) - 10,
+        //     b = parseInt(Math.random()*30) - 10,
+        //     c = [-1,1][Math.floor(Math.random() * 2)] * parseInt(Math.random()*100),
+        //     s = [-1,1][Math.floor(Math.random() * 2)];
         
         let line = [ a, b, c, s ]
 
@@ -317,10 +323,21 @@ let LPP = () => {
     }
 
     let onClear = () => {
-        setZoomLevel(3);
-        setMaxX(zoomLevel*PASS);
         setLines([]); 
+        setMaxX(zoomLevel*PASS);
         setPolygon([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
+        setStateIndex(0);
+        setZoomLevel(3);
+    }
+
+    let onStartAlgorithm = () => {
+        const {A, b, sign} = file.subjectTo;
+
+        // REFACTOR TO LOCALLY PASS AND RETURN UPDATED OBJECTS
+        // A.forEach((el, i) => {
+            onAdd(A[stateIndex][0], A[stateIndex][1], -b[stateIndex], sign[stateIndex]);
+        // })
+        setStateIndex(stateIndex+1);
     }
 
     let onZoom = i => {
@@ -366,6 +383,7 @@ let LPP = () => {
                 <Button variant='outlined' onClick={onClear}>CLEAR</Button>
                 <Button variant='outlined' onClick={() => onZoom(1)}>+</Button>
                 <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
+                <Button disabled={stateIndex===file.subjectTo.A.length} variant='outlined' onClick={onStartAlgorithm}>{">"}</Button>
                 <PlotGraph 
                     lines={lines}
                     level={zoomLevel}
