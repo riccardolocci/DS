@@ -42,11 +42,11 @@ let PlotGraph = (props) => {
         title: title,
         xaxis: {
           range: [-10, maxX],
-          fixedrange: true
+          // fixedrange: true
         },
         yaxis: {
           range: [-10, maxX],
-          fixedrange: true
+          // fixedrange: true
         },
         width: 1000,
         height: 1000,
