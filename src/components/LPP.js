@@ -13,6 +13,8 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 
 var numbers = require('numbers');
 
+var _ = require('lodash');
+
 const useStyles = makeStyles((theme) => createStyles({
     button: {
         float: 'left',
@@ -174,7 +176,7 @@ const useStyles = makeStyles((theme) => createStyles({
     }
 }));
 
-const DEBUG=true
+const DEBUG=false
 const PASS=50
 
 let LPP = () => {
@@ -320,7 +322,7 @@ let LPP = () => {
 
     let onStartAlgorithm = () => {
         const { A, b, sign } = file.subjectTo;
-        const c_prime = file.objectiveFunction;
+        const { objectiveFunction: c_prime, variables } = file;
 
         let startLines = lines;
         let startPolygon = polygon;
@@ -334,45 +336,49 @@ let LPP = () => {
         setLines(startLines);
         setPolygon(startPolygon);
 
-        //HARDCODED
-        // let varIndexes = [...A[0].keys()]
-        let B = numbers.matrix.identity(A.length)//A.map(r => new Array(A.length).fill(0));
-        // B.forEach((el, i) => {
-        //     el[i] = 1
-        // })
+        let B = numbers.matrix.identity(A.length)
+
+        let x_F_labels = _.range(1, A.length+1).map(n => `x${n}`);
+        let x_B_labels = _.range(x_F_labels.length+1, x_F_labels.length+A.length+1).map(n => `x${n}`);
 
         let B_inv = numbers.matrix.inverse(B);
         let F = A.slice();
 
-        console.log('B', JSON.stringify(B));
-        console.log('B_inv', JSON.stringify(B_inv));
-        console.log('F', JSON.stringify(F));
+        // console.log('B', JSON.stringify(B));
+        // console.log('B_inv', JSON.stringify(B_inv));
+        // console.log('F', JSON.stringify(F));
 
         //TRASPOSTO PERCHE' DAL FILE LO STO PASSANDO COME UN VETTORE RIGA, MA DEVE ESSERE UN VETTORE COLONNA
         let b_prime = numbers.matrix.transpose([b]);
-        console.log('b_prime', JSON.stringify(b_prime));
+        // console.log('b_prime', JSON.stringify(b_prime));
 
         let B_inv_b = numbers.matrix.multiply(B_inv, b_prime);
         console.log('B_inv_b', JSON.stringify(B_inv_b));
 
         let B_inv_F =  numbers.matrix.multiply(B_inv, F);
-        console.log('B_inv_F', JSON.stringify(B_inv_F));
+        // console.log('B_inv_F', JSON.stringify(B_inv_F));
 
         //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
         let c_prime_B = numbers.matrix.zeros(1, B.length);
-        console.log('c_prime_B', JSON.stringify(c_prime_B));
+        // console.log('c_prime_B', JSON.stringify(c_prime_B));
 
         //VETTORE DEI COSTI DELLE VARIABILI FUORI BASE
         let c_prime_F = [c_prime.slice()];
-        console.log('c_prime_F', JSON.stringify(c_prime_F));
+        // console.log('c_prime_F', JSON.stringify(c_prime_F));
+
+        let c_prime_B_B_inv_b = numbers.matrix.multiply(c_prime_B, B_inv_b);
+        let c_bar_0 = -c_prime_B_B_inv_b[0][0];
+        // console.log('c_bar_0', JSON.stringify(c_bar_0));
 
         //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
-        let c_prime_bar_B = numbers.matrix.zeros(1, B.length);
-        console.log('c_prime_B', JSON.stringify(c_prime_B));
+        // let c_prime_B_B_inv_F = numbers.matrix.multiply(c_prime_B, B_inv_F);
+        // let c_prime_bar_B = numbers.matrix.subtraction(c_prime_F, c_prime_B_B_inv_F);
+        // console.log('c_prime_bar_B', JSON.stringify(c_prime_bar_B));
 
         //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI FUORI BASE
-        let c_prime_bar_F = [c_prime.slice()];
-        console.log('c_prime_F', JSON.stringify(c_prime_F));
+        let c_prime_B_B_inv_F = numbers.matrix.multiply(c_prime_B, B_inv_F);
+        let c_prime_bar_F = numbers.matrix.subtraction(c_prime_F, c_prime_B_B_inv_F);
+        // console.log('c_prime_bar_F', JSON.stringify(c_prime_bar_F));
 
         //PER DEFINIZIONE, xB = B^(-1)*b
         let x_B = B_inv_b.slice();
@@ -382,49 +388,95 @@ let LPP = () => {
         let x_F = numbers.matrix.zeros(F.length, 1);
         console.log('x_F', JSON.stringify(x_F));
 
-        let next_in_var = optimalityTest(c_prime_F[0]);
-        console.log('next_in_var', next_in_var)
+        x_B_labels.forEach((el, idx) => {
+            console.log(el, x_B[idx][0])
+        })
 
-        while(next_in_var != null){
+        x_F_labels.forEach((el, idx) => {
+            console.log(el, x_F[idx][0])
+        })
 
-            let next_out_var = null, min_value = null;
-            let next_in_col = numbers.matrix.getCol(B_inv_F, next_in_var);
+        // Index of the next entering variable
+        let index_h = optimalityTest(c_prime_bar_F[0]);
+        console.log('index_h', index_h)
 
-            x_B.forEach((el, i) => {
-                let value_next_in_var = el / next_in_col[i]
+        let i=0
+        while(index_h != null){
 
-                if(value_next_in_var < min_value || i===0){
-                    min_value = value_next_in_var;
-                    next_out_var = i;
+            // Index of the next leaving variable
+            let index_t = null, min_value = null;
+            // Column of the next entering variable
+            let col_h = numbers.matrix.getCol(B_inv_F, index_h);
+
+            B_inv_b.forEach((el, idx) => {
+                let value_index_h = el[0] / col_h[idx]
+                console.log('value_index_h', value_index_h)
+
+                if(value_index_h > 0){
+                    if(value_index_h < min_value || min_value === null){
+                        min_value = value_index_h;
+                        index_t = idx;
+                    }
                 }
             })
 
-            console.log('next_out_var', next_out_var);
+            console.log('index_t', index_t);
 
-            //B, B_inv, F, B_inv_b, B_inv_F, c_prime_B, c_prime_F, x_B, x_F
-            [B, F] = swapColumns(B, next_out_var, F, next_in_var);
+            if(index_t === null) break;
+            
+            let a_th = col_h[index_t];
+            // console.log('a_th', a_th);
 
-            console.log('B', JSON.stringify(B));
-            console.log('F', JSON.stringify(F));
+            //B, B_inv, F, B_inv_b, B_inv_F, c_prime_B, c_prime_F, x_B, x_F, c_prime_bar_F
+            [B, F] = swapColumns(B, index_t, F, index_h);
+
+            [x_B_labels[index_t], x_F_labels[index_h]] = [x_F_labels[index_h], x_B_labels[index_t]];
+
+            // console.log('B', JSON.stringify(B));
+            // console.log('F', JSON.stringify(F));
 
             B_inv = numbers.matrix.inverse(B);
+            // console.log('B_inv', JSON.stringify(B_inv));
             B_inv_b = numbers.matrix.multiply(B_inv, b_prime);
             console.log('B_inv_b', JSON.stringify(B_inv_b));
             B_inv_F = numbers.matrix.multiply(B_inv, F);
-            console.log('B_inv_F', JSON.stringify(B_inv_F));
+            // console.log('B_inv_F', JSON.stringify(B_inv_F));
 
-            let c_prime_B_B_inv_b = numbers.matrix.multiply(c_prime_B, B_inv_b);
-            console.log('c_prime_B_B_inv_b', JSON.stringify(c_prime_B_B_inv_b));
+            // [x_B[index_t][0], x_F[index_h][0]] = [x_F[index_h][0], x_B[index_t][0]];
+            [x_B[index_t][0], x_F[index_h][0]] = [min_value, x_B[index_t][0] - col_h[index_t] * min_value];
+            console.log('x_B', JSON.stringify(x_B));
+            console.log('x_F', JSON.stringify(x_F));
 
-            // [c_prime_B[0][next_out_var], c_prime_F[0][next_in_var]] = [c_prime_F[0][next_in_var], c_prime_B[0][next_out_var]];
+            // let a_th = col_h[index_t];
+            // console.log('a_th', a_th);
+
+            [c_prime_B[0][index_t], c_prime_F[0][index_h]] = [c_prime_F[0][index_h], c_prime_B[0][index_t]];
             // console.log('c_prime_B', JSON.stringify(c_prime_B));
             // console.log('c_prime_F', JSON.stringify(c_prime_F));
 
-            // [x_B[next_out_var][0], x_F[next_in_var][0]] = [x_F[next_in_var][0], x_B[next_out_var][0]];
-            // console.log('x_B', JSON.stringify(x_B));
-            // console.log('x_F', JSON.stringify(x_F));
+            c_prime_B_B_inv_b = numbers.matrix.multiply(c_prime_B, B_inv_b);
+            c_bar_0 = -c_prime_B_B_inv_b[0][0];
+            // console.log('c_bar_0', JSON.stringify(c_bar_0));
 
-            break;
+            c_prime_B_B_inv_F = numbers.matrix.multiply(c_prime_B, B_inv_F);
+            c_prime_bar_F = numbers.matrix.subtraction(c_prime_F, c_prime_B_B_inv_F);
+            // console.log('c_prime_bar_F', JSON.stringify(c_prime_bar_F));
+
+            i++;
+            console.log('iterations', i)
+
+            index_h = optimalityTest(c_prime_bar_F[0]);
+            console.log('index_h', index_h)
+
+            x_B_labels.forEach((el, idx) => {
+                console.log(el, x_B[idx][0])
+            })
+
+            x_F_labels.forEach((el, idx) => {
+                console.log(el, x_F[idx][0])
+            })
+
+            if(i>5) break;
         }
     }
 
@@ -443,9 +495,9 @@ let LPP = () => {
         setTimeout(() => setMessage(''), 5000);
     }
 
-    let swapColumns = (B, next_out_var, F, next_in_var) => {
+    let swapColumns = (B, index_t, F, index_h) => {
         B.forEach((el, i) => {
-            [el[next_out_var], F[i][next_in_var]] = [F[i][next_in_var], el[next_out_var]]
+            [el[index_t], F[i][index_h]] = [F[i][index_h], el[index_t]]
         })
 
         return [B, F]
