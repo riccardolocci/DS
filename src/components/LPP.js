@@ -68,9 +68,6 @@ const useStyles = makeStyles((theme) => createStyles({
         whiteSpace: 'normal',
         verticalAlign: 'top'
     },
-    // infoBox table {
-    //     width: 100%
-    // },
     legend: {
         display: 'inline-block',
         height: 30,
@@ -129,22 +126,6 @@ const useStyles = makeStyles((theme) => createStyles({
         transition: '0.2s',
         overflow: 'hidden'
     },
-    // paths tbody {
-    //     display: block,
-    //     height: 20vh,
-    //     overflow-y: auto,
-    // },
-    // paths thead, tbody tr {
-    //     display: table,
-    //     width: 100%,
-    //     table-layout: fixed,
-    // },
-    // paths tbody td{
-    //     padding: 2,
-    // },
-    // paths tbody tr:nth-child(odd):not(sourceRow):not(selectedRow){
-    //     background-color: rgb(235, 241, 250),
-    // },
     root: {
         height: '100%',
         fontSize: 'calc(12px + (18 - 12) * ((100vw - 1600px) / (2600 - 1600)))'
@@ -321,17 +302,17 @@ let LPP = () => {
     }
 
     let printTableau = (c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar) => {
-        console.log('  ', 'c_bar_0', x_B_labels, x_F_labels);
-        console.log('-z', c_bar_0, c_prime_bar_B[0], c_prime_bar_F[0]);
+        console.log('  ', 'c_bar_0', JSON.stringify(x_B_labels), JSON.stringify(x_F_labels));
+        console.log('-z', c_bar_0, JSON.stringify(c_prime_bar_B[0]), JSON.stringify(c_prime_bar_F[0]));
         for(let l=0; l<b_overbar.length; l++){
-            console.log(x_B_labels[l], b_overbar[l][0], B_inv_B[l], F_overbar[l]);
+            console.log(x_B_labels[l], b_overbar[l][0], JSON.stringify(B_inv_B[l]), JSON.stringify(F_overbar[l]));
         }
         console.log('\n');
     }
 
     let onStartAlgorithm = () => {
         const { A, b, sign } = file.subjectTo;
-        const { objectiveFunction: c_prime, variables } = file;
+        const { objectiveFunction: c_prime } = file;
 
         let startLines = lines;
         let startPolygon = polygon;
@@ -355,63 +336,39 @@ let LPP = () => {
 
         let B_inv_B = numbers.matrix.multiply(B_inv, B);
 
-        // console.log('B', JSON.stringify(B));
-        // console.log('B_inv', JSON.stringify(B_inv));
-        // console.log('F', JSON.stringify(F));
-
         //TRASPOSTO PERCHE' DAL FILE LO STO PASSANDO COME UN VETTORE RIGA, MA DEVE ESSERE UN VETTORE COLONNA
         let b_prime = numbers.matrix.transpose([b]);
-        // console.log('b_prime', JSON.stringify(b_prime));
 
         let b_overbar = numbers.matrix.multiply(B_inv, b_prime);
-        // console.log('b_overbar', JSON.stringify(b_overbar));
 
         let F_overbar =  numbers.matrix.multiply(B_inv, F);
-        // console.log('F_overbar', JSON.stringify(F_overbar));
 
         //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
         let c_prime_B = numbers.matrix.zeros(1, B.length);
-        // console.log('c_prime_B', JSON.stringify(c_prime_B));
 
         //VETTORE DEI COSTI DELLE VARIABILI FUORI BASE
         let c_prime_F = [c_prime.slice()];
-        // console.log('c_prime_F', JSON.stringify(c_prime_F));
 
         let c_prime_B_b_overbar = numbers.matrix.multiply(c_prime_B, b_overbar);
         let c_bar_0 = -c_prime_B_b_overbar[0][0];
-        // console.log('c_bar_0', JSON.stringify(c_bar_0));
 
         //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
-        // let c_prime_B_F_overbar = numbers.matrix.multiply(c_prime_B, F_overbar);
         let c_prime_bar_B = numbers.matrix.zeros(1, B[0].length)
-        // console.log('c_prime_bar_B', JSON.stringify(c_prime_bar_B));
 
         //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI FUORI BASE
         let c_prime_B_F_overbar = numbers.matrix.multiply(c_prime_B, F_overbar);
         let c_prime_bar_F = numbers.matrix.subtraction(c_prime_F, c_prime_B_F_overbar);
-        // console.log('c_prime_bar_F', JSON.stringify(c_prime_bar_F));
 
         //PER DEFINIZIONE, xB = B^(-1)*b
-        let x_B = b_overbar.slice();
-        // console.log('x_B', JSON.stringify(x_B));
+        // let x_B = b_overbar.slice();
 
         //PER DEFINIZIONE, IMPONGO LE VARIABILI FUORI BASE A 0
-        let x_F = numbers.matrix.zeros(F.length, 1);
-        // console.log('x_F', JSON.stringify(x_F));
-
-        // x_B_labels.forEach((el, idx) => {
-        //     console.log(el, x_B[idx][0])
-        // })
-
-        // x_F_labels.forEach((el, idx) => {
-        //     console.log(el, x_F[idx][0])
-        // })
+        // let x_F = numbers.matrix.zeros(F.length, 1);
 
         printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
 
         // Index of the next entering variable
         let index_h = optimalityTest(c_prime_bar_F[0]);
-        // console.log('index_h', index_h)
 
         let i=2
         while(index_h != null){
@@ -443,80 +400,30 @@ let LPP = () => {
 
             //UPDATING TABLES
             let z_pivot = c_prime_bar_F[0][index_h];
-            // console.log('z_pivot', z_pivot);
 
-            b_prime = numbers.matrix.rowScale(b_prime, index_t, 1/a_th);
+            b_overbar = numbers.matrix.rowScale(b_overbar, index_t, 1/a_th);
             B_inv_B = numbers.matrix.rowScale(B_inv_B, index_t, 1/a_th);
             F_overbar = numbers.matrix.rowScale(F_overbar, index_t, 1/a_th);
 
-            // printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
-
-            c_bar_0 -= z_pivot*b_prime[index_t];
+            c_bar_0 -= z_pivot*b_overbar[index_t];
             c_prime_bar_B = numbers.matrix.subtraction(c_prime_bar_B, [numbers.matrix.rowScale(B_inv_B, index_t, z_pivot)[index_t]])
             c_prime_bar_F = numbers.matrix.subtraction(c_prime_bar_F, [numbers.matrix.rowScale(F_overbar, index_t, z_pivot)[index_t]]);
-
-            // printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
             
-            for(let l=0; l<b_prime.length; l++){
+            for(let l=0; l<b_overbar.length; l++){
                 if(l === index_t) continue;
 
-                b_prime = numbers.matrix.rowAddMultiple(b_prime, index_t, l, -col_h[l]);
+                b_overbar = numbers.matrix.rowAddMultiple(b_overbar, index_t, l, -col_h[l]);
                 B_inv_B = numbers.matrix.rowAddMultiple(B_inv_B, index_t, l, -col_h[l]);
                 F_overbar = numbers.matrix.rowAddMultiple(F_overbar, index_t, l, -col_h[l]);
-
-                // printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
             }
             
-
-            //B, B_inv, F, b_overbar, F_overbar, c_prime_B, c_prime_F, x_B, x_F, c_prime_bar_F
-            // [B, F] = swapColumns(B, index_t, F, index_h);
             [B_inv_B, F_overbar] = swapColumns(B_inv_B, index_t, F_overbar, index_h);
-
+            [c_prime_bar_B, c_prime_bar_F] = swapColumns(c_prime_bar_B, index_t, c_prime_bar_F, index_h);
             [x_B_labels[index_t], x_F_labels[index_h]] = [x_F_labels[index_h], x_B_labels[index_t]];
 
-            // console.log('B', JSON.stringify(B));
-            // console.log('F', JSON.stringify(F));
-/*
-            B_inv = numbers.matrix.inverse(B);
-            // console.log('B_inv', JSON.stringify(B_inv));
-            b_overbar = numbers.matrix.multiply(B_inv, b_prime);
-            // console.log('b_overbar', JSON.stringify(b_overbar));
-            F_overbar = numbers.matrix.multiply(B_inv, F);
-            // console.log('F_overbar', JSON.stringify(F_overbar));
-
-            // [x_B[index_t][0], x_F[index_h][0]] = [x_F[index_h][0], x_B[index_t][0]];
-            [x_B[index_t][0], x_F[index_h][0]] = [min_value, x_B[index_t][0] - col_h[index_t] * min_value];
-            // console.log('x_B', JSON.stringify(x_B));
-            // console.log('x_F', JSON.stringify(x_F));
-
-            // let a_th = col_h[index_t];
-            // console.log('a_th', a_th);
-
-            [c_prime_B[0][index_t], c_prime_F[0][index_h]] = [c_prime_F[0][index_h], c_prime_B[0][index_t]];
-            // console.log('c_prime_B', JSON.stringify(c_prime_B));
-            // console.log('c_prime_F', JSON.stringify(c_prime_F));
-
-            c_prime_B_b_overbar = numbers.matrix.multiply(c_prime_B, b_overbar);
-            c_bar_0 = -c_prime_B_b_overbar[0][0];
-            // console.log('c_bar_0', JSON.stringify(c_bar_0));
-
-            c_prime_B_F_overbar = numbers.matrix.multiply(c_prime_B, F_overbar);
-            c_prime_bar_F = numbers.matrix.subtraction(c_prime_F, c_prime_B_F_overbar);
-            // console.log('c_prime_bar_F', JSON.stringify(c_prime_bar_F));
-*/          
-// console.log('AFTER SWAP')
             printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
 
             index_h = optimalityTest(c_prime_bar_F[0]);
-            // console.log('index_h', index_h)
-
-            // x_B_labels.forEach((el, idx) => {
-            //     console.log(el, x_B[idx][0])
-            // })
-
-            // x_F_labels.forEach((el, idx) => {
-            //     console.log(el, x_F[idx][0])
-            // })
 
             if(i>5) break;
             i++;
