@@ -9,11 +9,11 @@ const Plot = createPlotlyComponent(Plotly);
 let getPolygonPath = (perimeter) => perimeter.length ? `M${perimeter.reduce((acc, n) => `${acc}L${n.join(',')}`)}Z` : '';
 
 let PlotGraph = (props) => {
-  var lines = []
+  var drawLines = []
 
-  const maxX = props.maxX
+  const { lines, maxX, polygon, title } = props;
 
-  if(props.lines) lines = props.lines.map( n => ({
+  if(lines) drawLines = lines.map( n => ({
       type: 'line',
       x0: -maxX, y0: getY(n, -maxX),
       x1: maxX, y1: getY(n, maxX),
@@ -24,9 +24,9 @@ let PlotGraph = (props) => {
       }
     }));
 
-  let shapes = [...lines]
+  let shapes = [...drawLines]
   
-  let polygonPath = getPolygonPath(props.polygon)
+  let polygonPath = getPolygonPath(polygon)
   if(polygonPath) shapes.push({
     type: 'path',
     path: polygonPath,
@@ -39,14 +39,14 @@ let PlotGraph = (props) => {
   return (
     <Plot
       layout={ {
-        title: 'Basic Polygon Cut',
+        title: title,
         xaxis: {
           range: [-10, maxX],
-          fixedrange: true
+          // fixedrange: true
         },
         yaxis: {
           range: [-10, maxX],
-          fixedrange: true
+          // fixedrange: true
         },
         width: 1000,
         height: 1000,

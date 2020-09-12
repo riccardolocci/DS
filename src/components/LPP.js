@@ -11,6 +11,10 @@ import { getY } from '../utils';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 
+var numbers = require('numbers');
+
+var _ = require('lodash');
+
 const useStyles = makeStyles((theme) => createStyles({
     button: {
         float: 'left',
@@ -64,9 +68,6 @@ const useStyles = makeStyles((theme) => createStyles({
         whiteSpace: 'normal',
         verticalAlign: 'top'
     },
-    // infoBox table {
-    //     width: 100%
-    // },
     legend: {
         display: 'inline-block',
         height: 30,
@@ -125,22 +126,6 @@ const useStyles = makeStyles((theme) => createStyles({
         transition: '0.2s',
         overflow: 'hidden'
     },
-    // paths tbody {
-    //     display: block,
-    //     height: 20vh,
-    //     overflow-y: auto,
-    // },
-    // paths thead, tbody tr {
-    //     display: table,
-    //     width: 100%,
-    //     table-layout: fixed,
-    // },
-    // paths tbody td{
-    //     padding: 2,
-    // },
-    // paths tbody tr:nth-child(odd):not(sourceRow):not(selectedRow){
-    //     background-color: rgb(235, 241, 250),
-    // },
     root: {
         height: '100%',
         fontSize: 'calc(12px + (18 - 12) * ((100vw - 1600px) / (2600 - 1600)))'
@@ -172,7 +157,7 @@ const useStyles = makeStyles((theme) => createStyles({
     }
 }));
 
-const DEBUG=true
+const DEBUG=false
 const PASS=50
 
 let LPP = () => {
@@ -182,7 +167,7 @@ let LPP = () => {
     let [maxX, setMaxX] = useState(150);
     let [message, setMessage] = useState('');
     let [polygon, setPolygon] = useState([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
-    let [zoomLevel, setZoomLevel] = useState(3)
+    let [zoomLevel, setZoomLevel] = useState(3);
     
     const classes = useStyles();
 
@@ -234,40 +219,34 @@ let LPP = () => {
 
     let getFile = f => {
         setLoading(true);
+        if(DEBUG) console.log('FILE:', f)
         setFile(f);
         setLoading(false);
     }
 
-    let onAdd = () => {
-        let a = parseInt(Math.random()*60) - 10,
-            b = parseInt(Math.random()*30) - 10,
-            c = [-1,1][Math.floor(Math.random() * 2)] * parseInt(Math.random()*100),
-            s = [-1,1][Math.floor(Math.random() * 2)];
-        
-        let line = [ a, b, c, s ]
+    let onAdd = (line, thisPolygon) => {
+        const [a, b, c, s] = line;
 
         if(DEBUG){
             console.log(`Adding ${a}x`, `${b > 0 ? '+' : '-'} ${Math.abs(b)}y`, s > 0 ? '>' : '<', `${-c}`);
             console.log(`AKA y`, `${a/b > 0 ? '+' : '-'} ${Math.abs(a/b)}x`, s > 0 ? '>' : '<', `${-c/b}`);
         }
 
-        setLines([...lines, line]);
-
         let polygonLeft = [], polygonRight = [];
         
         let currentPolygon = polygonLeft;
         let intersections = []
 
-        for(let i=0; i<polygon.length; i++){
-            let p1 = polygon[i];
+        for(let i=0; i<thisPolygon.length; i++){
+            let p1 = thisPolygon[i];
             
             if(intersections.length === 2){
                 currentPolygon.push(p1);
                 continue;
             }
 
-            let j = i+1<polygon.length ? i+1 : 0;
-            let p2 = polygon[j];
+            let j = i+1<thisPolygon.length ? i+1 : 0;
+            let p2 = thisPolygon[j];
 
             let intersection = findIntersection(line, [p1, p2]);
 
@@ -302,7 +281,7 @@ let LPP = () => {
                 [1, 1, 1],
             ]);
 
-            setPolygon(s*d > 0 ? polygonLeft : polygonRight);
+            return s*d > 0 ? polygonLeft : polygonRight
         }
         else if(polygonRight.length){
             let d = determinant([
@@ -311,15 +290,144 @@ let LPP = () => {
                 [1, 1, 1],
             ]);
 
-            setPolygon(s*d > 0 ? polygonRight : polygonLeft);
+            return s*d > 0 ? polygonRight : polygonLeft
         }
     }
 
     let onClear = () => {
-        setZoomLevel(3);
-        setMaxX(zoomLevel*PASS);
         setLines([]); 
+        setMaxX(zoomLevel*PASS);
         setPolygon([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
+        setZoomLevel(3);
+    }
+
+    let printTableau = (c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar) => {
+        console.log('  ', 'c_bar_0', JSON.stringify(x_B_labels), JSON.stringify(x_F_labels));
+        console.log('-z', c_bar_0, JSON.stringify(c_prime_bar_B[0]), JSON.stringify(c_prime_bar_F[0]));
+        for(let l=0; l<b_overbar.length; l++){
+            console.log(x_B_labels[l], b_overbar[l][0], JSON.stringify(B_inv_B[l]), JSON.stringify(F_overbar[l]));
+        }
+        console.log('\n');
+    }
+
+    let onStartAlgorithm = () => {
+        const { A, b, sign } = file.subjectTo;
+        const { objectiveFunction: c_prime } = file;
+
+        let startLines = lines;
+        let startPolygon = polygon;
+
+        A.forEach((el, i) => {
+            let thisLine = [el[0], el[1], -b[i], sign[i]]
+            startLines = [...startLines, thisLine]
+            startPolygon = onAdd(thisLine, startPolygon);
+        })
+
+        setLines(startLines);
+        setPolygon(startPolygon);
+
+        let B = numbers.matrix.identity(A.length)
+
+        let x_F_labels = _.range(1, A.length+1).map(n => `x${n}`);
+        let x_B_labels = _.range(x_F_labels.length+1, x_F_labels.length+A.length+1).map(n => `x${n}`);
+
+        let B_inv = numbers.matrix.inverse(B);
+        let F = A.slice();
+
+        let B_inv_B = numbers.matrix.multiply(B_inv, B);
+
+        //TRASPOSTO PERCHE' DAL FILE LO STO PASSANDO COME UN VETTORE RIGA, MA DEVE ESSERE UN VETTORE COLONNA
+        let b_prime = numbers.matrix.transpose([b]);
+
+        let b_overbar = numbers.matrix.multiply(B_inv, b_prime);
+
+        let F_overbar =  numbers.matrix.multiply(B_inv, F);
+
+        //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
+        let c_prime_B = numbers.matrix.zeros(1, B.length);
+
+        //VETTORE DEI COSTI DELLE VARIABILI FUORI BASE
+        let c_prime_F = [c_prime.slice()];
+
+        let c_prime_B_b_overbar = numbers.matrix.multiply(c_prime_B, b_overbar);
+        let c_bar_0 = -c_prime_B_b_overbar[0][0];
+
+        //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
+        let c_prime_bar_B = numbers.matrix.zeros(1, B[0].length)
+
+        //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI FUORI BASE
+        let c_prime_B_F_overbar = numbers.matrix.multiply(c_prime_B, F_overbar);
+        let c_prime_bar_F = numbers.matrix.subtraction(c_prime_F, c_prime_B_F_overbar);
+
+        //PER DEFINIZIONE, xB = B^(-1)*b
+        // let x_B = b_overbar.slice();
+
+        //PER DEFINIZIONE, IMPONGO LE VARIABILI FUORI BASE A 0
+        // let x_F = numbers.matrix.zeros(F.length, 1);
+
+        printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
+
+        // Index of the next entering variable
+        let index_h = optimalityTest(c_prime_bar_F[0]);
+
+        let i=2
+        while(index_h != null){
+            console.log('iterations', i)
+
+            // Index of the next leaving variable
+            let index_t = null, min_value = null;
+            // Column of the next entering variable
+            let col_h = numbers.matrix.getCol(F_overbar, index_h);
+            console.log('col_h', col_h)
+
+            b_overbar.forEach((el, idx) => {
+                let value_index_h = el[0] / col_h[idx]
+
+                if(value_index_h > 0){
+                    if(value_index_h < min_value || min_value === null){
+                        min_value = value_index_h;
+                        index_t = idx;
+                    }
+                }
+            })
+
+            console.log('index_t', index_t);
+
+            if(index_t === null) break;
+            
+            let a_th = col_h[index_t];
+            console.log('a_th(PIVOT)', a_th);
+
+            //UPDATING TABLES
+            let z_pivot = c_prime_bar_F[0][index_h];
+
+            b_overbar = numbers.matrix.rowScale(b_overbar, index_t, 1/a_th);
+            B_inv_B = numbers.matrix.rowScale(B_inv_B, index_t, 1/a_th);
+            F_overbar = numbers.matrix.rowScale(F_overbar, index_t, 1/a_th);
+
+            c_bar_0 -= z_pivot*b_overbar[index_t];
+            c_prime_bar_B = numbers.matrix.subtraction(c_prime_bar_B, [numbers.matrix.rowScale(B_inv_B, index_t, z_pivot)[index_t]])
+            c_prime_bar_F = numbers.matrix.subtraction(c_prime_bar_F, [numbers.matrix.rowScale(F_overbar, index_t, z_pivot)[index_t]]);
+            
+            for(let l=0; l<b_overbar.length; l++){
+                if(l === index_t) continue;
+
+                b_overbar = numbers.matrix.rowAddMultiple(b_overbar, index_t, l, -col_h[l]);
+                B_inv_B = numbers.matrix.rowAddMultiple(B_inv_B, index_t, l, -col_h[l]);
+                F_overbar = numbers.matrix.rowAddMultiple(F_overbar, index_t, l, -col_h[l]);
+            }
+            
+            [B_inv_B, F_overbar] = swapColumns(B_inv_B, index_t, F_overbar, index_h);
+            [c_prime_bar_B, c_prime_bar_F] = swapColumns(c_prime_bar_B, index_t, c_prime_bar_F, index_h);
+            [x_B_labels[index_t], x_F_labels[index_h]] = [x_F_labels[index_h], x_B_labels[index_t]];
+
+            printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
+
+            index_h = optimalityTest(c_prime_bar_F[0]);
+
+            if(i>5) break;
+            i++;
+        }
     }
 
     let onZoom = i => {
@@ -327,9 +435,22 @@ let LPP = () => {
         setMaxX(zoomLevel*PASS);
     }
 
+    let optimalityTest = c_prime_F => { 
+        for(let i=0; i < c_prime_F.length; i++) if(c_prime_F[i] < 0) return i;
+        return null
+    }
+
     let showMessage = message => {
         setMessage(message);
         setTimeout(() => setMessage(''), 5000);
+    }
+
+    let swapColumns = (B, index_t, F, index_h) => {
+        B.forEach((el, i) => {
+            [el[index_t], F[i][index_h]] = [F[i][index_h], el[index_t]]
+        })
+
+        return [B, F]
     }
 
     return (
@@ -365,11 +486,13 @@ let LPP = () => {
                 <Button variant='outlined' onClick={onClear}>CLEAR</Button>
                 <Button variant='outlined' onClick={() => onZoom(1)}>+</Button>
                 <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
+                <Button variant='outlined' onClick={onStartAlgorithm}>{">"}</Button>
                 <PlotGraph 
                     lines={lines}
+                    level={zoomLevel}
                     maxX={maxX}
                     polygon={polygon}
-                    level={zoomLevel}
+                    title={(file.type === 'ILP' ? 'Integer ' : '') + 'Linear Programming Problem'}
                 />
                 <div>
                     {lines.length}

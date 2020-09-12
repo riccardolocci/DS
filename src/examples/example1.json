@@ -1,0 +1,13 @@
+{
+    "type": "LP",
+    "variables": ["x1", "x2"],
+    "objectiveFunction": [-1, -1],
+    "subjectTo": {
+        "A": [
+            [6, 4],
+            [3, -2]
+        ],
+        "sign": [-1, 1],
+        "b": [24, 6]
+    }
+}
