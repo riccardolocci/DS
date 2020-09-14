@@ -48,8 +48,9 @@ let PlotGraph = (props) => {
           range: [-10, maxX],
           // fixedrange: true
         },
-        width: 1000,
-        height: 1000,
+        // width: 1000,
+        // height: 500,
+        // responsive: true,
         shapes: shapes
       } }
     />
