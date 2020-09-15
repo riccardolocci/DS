@@ -1,6 +1,28 @@
 const numbers = require('numbers');
 const _ = require('lodash');
 
+
+export const findPivot = (bOverbar, FOverbar, indexH) => {
+    let thisIndexT = null, minValue = null;
+    let thisColH = numbers.matrix.getCol(FOverbar, indexH);
+    console.log('colH', thisColH);
+
+    bOverbar.forEach((el, idx) => {
+        let value_indexH = el[0] / thisColH[idx]
+
+        if(value_indexH > 0){
+            if(value_indexH < minValue || minValue === null){
+                minValue = value_indexH;
+                thisIndexT = idx;
+            }
+        }
+    });
+
+    return {
+        thisColH, thisIndexT
+    }
+}
+
 export const init = (A, b, c_prime) => {
     let B = numbers.matrix.identity(A.length)
 
@@ -44,23 +66,11 @@ export const optimalityTest = c_prime_F => {
     return null
 }
 
-export const findPivot = (bOverbar, FOverbar, indexH) => {
-    let thisIndexT = null, minValue = null;
-    let thisColH = numbers.matrix.getCol(FOverbar, indexH);
-    console.log('colH', thisColH);
-
-    bOverbar.forEach((el, idx) => {
-        let value_indexH = el[0] / thisColH[idx]
-
-        if(value_indexH > 0){
-            if(value_indexH < minValue || minValue === null){
-                minValue = value_indexH;
-                thisIndexT = idx;
-            }
-        }
-    });
-
-    return {
-        thisColH, thisIndexT
+export const printTableau = (cBar0, xBLables, xFLables, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar) => {
+    console.log('  ', 'cBar0', JSON.stringify(xBLables), JSON.stringify(xFLables));
+    console.log('-z', cBar0, JSON.stringify(cPrimeBarB[0]), JSON.stringify(cPrimeBarF[0]));
+    for(let l=0; l<bOverbar.length; l++){
+        console.log(xBLables[l], bOverbar[l][0], JSON.stringify(BInvB[l]), JSON.stringify(FOverbar[l]));
     }
+    console.log('\n');
 }

@@ -5,7 +5,7 @@ import Dropzone from './Dropzone';
 import ExamplesManager from './ExamplesManager';
 import RandomManager from './RandomManager';
 
-import { Button, Paper, Table, TableRow, TableHead, TableCell, TableBody } from '@material-ui/core';
+import { Button, Grid, Paper, Table, TableRow, TableHead, TableCell, TableBody } from '@material-ui/core';
 
 import { getY } from '../utils';
 
@@ -98,18 +98,9 @@ let LPP = () => {
     let [step, setStep] = useState(0);
     let [zoomLevel, setZoomLevel] = useState(3);
 
-    let [cBar0, setCBar0] = useState();
-    let [xBLables, setXBLables] = useState();
-    let [xFLables, setXFLables] = useState();
-    let [cPrimeBarB, setCPrimeBarB] = useState();
-    let [cPrimeBarF, setCPrimeBarF] = useState();
-    let [bOverbar, setBOverbar] = useState();
-    let [BInvB, setBInvB] = useState();
-    let [FOverbar, setFOverbar] = useState();
-
-    let [indexH, setIndexH] = useState();
-    let [indexT, setIndexT] = useState();
-    let [colH, setColH] = useState();
+    let [history, setHistory] = useState([]);
+    let [page, setPage] = useState(0);
+    let [finished, setFinished] = useState(false);
     
     const classes = useStyles();
 
@@ -131,6 +122,9 @@ let LPP = () => {
         setFile(thisFile);
         setLines(startLines);
         setPolygon(startPolygon);
+
+        let maxxxX = startPolygon.reduce((acc, curr) =>  Math.max(acc, ...curr), 0) * 2;
+        setMaxX(maxxxX);
     }
 
     let findIntersection = (line, segment) => {
@@ -169,6 +163,19 @@ let LPP = () => {
     }
 
     let formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
+
+    let handleHistory = (next = false) => {
+        if(next){
+            //Create new page only if algorithm has not finished and next page does not exist
+            if(!(finished || history[page+1])){
+                onStartAlgorithm();
+            }
+            if(history[0]) setPage(page+1);
+        }
+        else{
+            if(page > 0) setPage(page-1)
+        }
+    }
 
     let getFile = f => {
         setLoading(true);
@@ -253,31 +260,20 @@ let LPP = () => {
         setZoomLevel(3);
     }
 
-    // let printTableau = (cBar0, xBLables, xFLables, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar) => {
-    //     console.log('  ', 'cBar0', JSON.stringify(xBLables), JSON.stringify(xFLables));
-    //     console.log('-z', cBar0, JSON.stringify(cPrimeBarB[0]), JSON.stringify(cPrimeBarF[0]));
-    //     for(let l=0; l<bOverbar.length; l++){
-    //         console.log(xBLables[l], bOverbar[l][0], JSON.stringify(BInvB[l]), JSON.stringify(FOverbar[l]));
-    //     }
-    //     console.log('\n');
-    // }
-
     let onStartAlgorithm = () => {
         const { objectiveFunction: cPrime, subjectTo: { A, b } } = file;
 
         const algorithm = require('../algorithms/simplexTableau.js')
+
+        let newPage = null;
+        if(stage > 0){
+            newPage = JSON.parse(JSON.stringify(history[page])); 
+        }
         
         switch(stage){
             case 0:
                 const initValues = algorithm.init(A, b, cPrime);
-                setCBar0(initValues.cBar0);
-                setXBLables(initValues.xBLables);
-                setXFLables(initValues.xFLables);
-                setCPrimeBarB(initValues.cPrimeBarB);
-                setCPrimeBarF(initValues.cPrimeBarF);
-                setBOverbar(initValues.bOverbar);
-                setBInvB(initValues.BInvB);
-                setFOverbar(initValues.FOverbar);
+                setHistory([initValues]);
 
                 setStage(stage+1);
                 break;
@@ -285,25 +281,36 @@ let LPP = () => {
             case 1:
                 switch(step){
                     case 0:
-                        let thisIndexH = algorithm.optimalityTest(cPrimeBarF[0]);
-                        setIndexH(thisIndexH);
+                        newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
 
-                        if(!Number.isInteger(thisIndexH)) {
+                        if(!Number.isInteger(newPage.indexH)) {
                             setStage(2);
                             setStep(0);
+                            setFinished(true);
                         }
                         else setStep(1);
+
+                        setHistory([...history, newPage]);
 
                         break;
 
                     case 1:
-                        const {thisColH, thisIndexT} = algorithm.findPivot(bOverbar, FOverbar, indexH);
-                        setIndexT(thisIndexT);
-                        setColH(thisColH);
+                        const {thisColH, thisIndexT} = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
+                        newPage.colH = thisColH;
+                        newPage.indexT = thisIndexT;
+                        newPage.showPivot = true;
+
                         setStep(2);
+                        setHistory([...history, newPage]);
+
                         break;
 
                     case 2:
+                        let { cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables } = newPage;
+                        const { colH, indexH, indexT } = newPage;
+                        
+                        newPage.showPivot = false;
+
                         let aTH = colH[indexT];
 
                         //UPDATING TABLES
@@ -314,7 +321,7 @@ let LPP = () => {
                         FOverbar = numbers.matrix.rowScale(FOverbar, indexT, 1/aTH);
 
                         cBar0 -= zPivot*bOverbar[indexT];
-                        setCBar0(cBar0);
+
                         cPrimeBarB = numbers.matrix.subtraction(cPrimeBarB, [numbers.matrix.rowScale(BInvB, indexT, zPivot)[indexT]])
                         cPrimeBarF = numbers.matrix.subtraction(cPrimeBarF, [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
                         
@@ -325,20 +332,16 @@ let LPP = () => {
                             BInvB = numbers.matrix.rowAddMultiple(BInvB, indexT, l, -colH[l]);
                             FOverbar = numbers.matrix.rowAddMultiple(FOverbar, indexT, l, -colH[l]);
                         }
-                        setBOverbar(bOverbar);
-                        setBInvB(BInvB);
-                        setFOverbar(FOverbar);
                         
                         [BInvB, FOverbar] = swapColumns(BInvB, indexT, FOverbar, indexH);
                         [cPrimeBarB, cPrimeBarF] = swapColumns(cPrimeBarB, indexT, cPrimeBarF, indexH);
-                        setCPrimeBarB(cPrimeBarB);
-                        setCPrimeBarF(cPrimeBarF);
 
                         [xBLables[indexT], xFLables[indexH]] = [xFLables[indexH], xBLables[indexT]];
-                        setXBLables(xBLables);
-                        setXFLables(xFLables);
+
+                        newPage = {...newPage, ...{cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables}}
 
                         setStep(0);
+                        setHistory([...history, newPage]);
                         break;
                     default:
                         break;
@@ -347,11 +350,6 @@ let LPP = () => {
             default:
                 break;
         }
-    }
-
-    let onZoom = i => {
-        setZoomLevel(zoomLevel+i);
-        setMaxX(zoomLevel*PASS);
     }
 
     let showMessage = message => {
@@ -369,7 +367,7 @@ let LPP = () => {
 
     return (
         <>
-            {!file && <> 
+            {!file && <>
                 <div className={file ? classes.dropClosed : classes.drop}>
                     <Dropzone
                         getFile={getFile}
@@ -394,59 +392,63 @@ let LPP = () => {
                     </Paper>
                 </div>
             </>}
-
-            {file && <>
-                <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
-                <Button variant='outlined' onClick={onClear}>CLEAR</Button>
-                <Button variant='outlined' onClick={() => onZoom(1)}>+</Button>
-                <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
-                <Button variant='outlined' onClick={onStartAlgorithm}>{">"}</Button>
-                <PlotGraph 
-                    lines={lines}
-                    level={zoomLevel}
-                    maxX={maxX}
-                    polygon={polygon}
-                    title={(file.type === 'ILP' ? 'Integer ' : '') + 'Linear Programming Problem'}
-                />
-                <div>
-                    {lines.length}
-                </div>
-            </>}
-            {stage>0 && <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell key="head-empty-1"></TableCell>
-                        <TableCell key="head-empty-2"></TableCell>
-                        {xBLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
-                        {xFLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    <TableRow>
-                        <TableCell key='-z'>-z</TableCell>
-                        <TableCell key='cBar0'>{cBar0}</TableCell>
-                        {cPrimeBarB[0].map((n, i) => (<TableCell key={`cPrimeBarB${i}`}>{formatNumber(n)}</TableCell>))}
-                        {cPrimeBarF[0].map((n, i) => (<TableCell key={`cPrimeBarF${i}`}>{formatNumber(n)}</TableCell>))}
-                    </TableRow>
-                    {xBLables.map((n,i) => (
-                        <TableRow key={`baseValuesRow${i}`}>
-                            <TableCell key={`baseValues${n}`}>{n}</TableCell>
-                            <TableCell key={`bOverbar${i}`}>{formatNumber(bOverbar[i][0])}</TableCell>
-                            {BInvB[i].map(n => (<TableCell key={`BInvB${i},${n}`}>{formatNumber(n)}</TableCell>))}
-                            {FOverbar[i].map((n,j) => (
-                                <TableCell 
-                                    className={
-                                        stage===1 && step===2 && indexT===i && indexH===j ? classes.pivot : ''
-                                    } 
-                                    key={`FOverbar${i},${n}`}
-                                >
-                                    {formatNumber(n)}
-                                </TableCell>
+            {file && <Grid container direction='row'>
+                <Grid container direction='row' item xs={6}>
+                    <Grid item xs={12}>
+                        <PlotGraph 
+                            lines={lines}
+                            level={zoomLevel}
+                            maxX={maxX}
+                            polygon={polygon}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
+                        <Button variant='outlined' onClick={onClear}>CLEAR</Button>
+                        <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
+                        <Button variant='outlined' disabled={!history[page+1] && finished} onClick={() => handleHistory(true)}>{">"}</Button>
+                        {page}
+                    </Grid>
+                </Grid>
+                <Grid container direction='column' item xs={6}>
+                    {page>0 && <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell key="head-empty-1"></TableCell>
+                                <TableCell key="head-empty-2"></TableCell>
+                                {history[page].xBLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
+                                {history[page].xFLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell key='-z'>-z</TableCell>
+                                <TableCell key='cBar0'>{history[page].cBar0}</TableCell>
+                                {history[page].cPrimeBarB[0].map((n, i) => (<TableCell key={`cPrimeBarB${i}`}>{formatNumber(n)}</TableCell>))}
+                                {history[page].cPrimeBarF[0].map((n, i) => (<TableCell key={`cPrimeBarF${i}`}>{formatNumber(n)}</TableCell>))}
+                            </TableRow>
+                            {history[page].xBLables.map((n,i) => (
+                                <TableRow key={`baseValuesRow${i}`}>
+                                    <TableCell key={`baseValues${n}`}>{n}</TableCell>
+                                    <TableCell key={`bOverbar${i}`}>{formatNumber(history[page].bOverbar[i][0])}</TableCell>
+                                    {history[page].BInvB[i].map(n => (<TableCell key={`BInvB${i},${n}`}>{formatNumber(n)}</TableCell>))}
+                                    {history[page].FOverbar[i].map((n,j) => (
+                                        <TableCell 
+                                            className={
+                                                history[page].showPivot && 
+                                                history[page].indexT===i && history[page].indexH===j ? classes.pivot : ''
+                                            } 
+                                            key={`FOverbar${i},${n}`}
+                                        >
+                                            {formatNumber(n)}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
                             ))}
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>}
+                        </TableBody>
+                    </Table>}
+                </Grid>
+            </Grid>}
         </>
     )
 }
