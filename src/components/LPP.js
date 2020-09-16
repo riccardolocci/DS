@@ -5,7 +5,7 @@ import Dropzone from './Dropzone';
 import ExamplesManager from './ExamplesManager';
 import RandomManager from './RandomManager';
 
-import { Button, Paper } from '@material-ui/core';
+import { Button, Grid, Paper, Table, TableRow, TableHead, TableCell, TableBody } from '@material-ui/core';
 
 import { getY } from '../utils';
 
@@ -13,24 +13,12 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 
 var numbers = require('numbers');
 
-var _ = require('lodash');
-
 const useStyles = makeStyles((theme) => createStyles({
     button: {
         float: 'left',
         marginTop: 10,
         marginRight: 10,
         border: '1px solid rgba(0,0,0,0.3)'
-    },
-    buttonRight: {
-        float: 'right',
-        marginTop: 10,
-        border: '1px solid rgba(0,0,0,0.3)'
-    },
-    colorPicker: {
-        position: 'absolute',
-        top: 50,
-        zIndex: 1
     },
     drop: {
         height: '40vh',
@@ -61,50 +49,10 @@ const useStyles = makeStyles((theme) => createStyles({
         margin: 'auto',
         whiteSpace: 'nowrap'
     },
-    infoBox: {
-        textAlign: 'left',
-        width: '50%',
-        display: 'inline-block',
-        whiteSpace: 'normal',
-        verticalAlign: 'top'
-    },
-    legend: {
-        display: 'inline-block',
-        height: 30,
-        margin: '15px 10px 0 0',
-        width: 120,
-        textAlign: 'initial'
-    },
-    legendColor: {
-        float: 'left',
-        borderRadius: 10,
-        height: 20,
-        width: 20,
-        margin: '5px 10px'
-    },
-    legendKey: {
-        float: 'left',
-        height: 20,
-        width: 70,
-        margin: '5px 0',
-        fontSize: 15
-    },
-    legendPicked: {
-        display: 'inline-block',
-        height: 30,
-        margin: '15px 10px 0 0',
-        width: 120,
-        textAlign: 'initial',
-        borderRadius: 5,
-        backgroundColor: 'rgba(0,0,0,0.1)'
-    },
     loading: {
         width: 50,
         float: 'right',
         margin: '10px 10px'
-    },
-    menu: {
-        height: 350,
     },
     paper: {
         backgroundColor: 'rgb(200, 0, 0)',
@@ -126,34 +74,13 @@ const useStyles = makeStyles((theme) => createStyles({
         transition: '0.2s',
         overflow: 'hidden'
     },
-    root: {
-        height: '100%',
-        fontSize: 'calc(12px + (18 - 12) * ((100vw - 1600px) / (2600 - 1600)))'
-    },
-    select: {
-        width: 150,
-        float: 'left',
-        margin: '0 50px 0 0'
-    },
-    selectableRow: {
-        cursor: 'pointer'
-    },
-    selectedRow: {
-        backgroundColor: 'rgb(148, 235, 153)'
-    },
-    sourceRow: {
-        backgroundColor: 'rgb(250, 240, 217)'
+    pivot: {
+        backgroundColor: 'red',
+        color: 'white'
     },
     spacer: {
         position: 'relative',
         height: 80
-    },
-    switch: {
-        float: 'left',
-        padding: '20px 20px 0 0'
-    },
-    unselectableRow: {
-        cursor: 'not-allowed'
     }
 }));
 
@@ -164,23 +91,41 @@ let LPP = () => {
     let [file, setFile] = useState();
     let [lines, setLines] = useState([]);
     let [loading, setLoading] = useState(false);
-    let [maxX, setMaxX] = useState(150);
+    let [maxX, setMaxX] = useState(30);
     let [message, setMessage] = useState('');
     let [polygon, setPolygon] = useState([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
+    let [stage, setStage] = useState(0);
+    let [step, setStep] = useState(0);
     let [zoomLevel, setZoomLevel] = useState(3);
+
+    let [history, setHistory] = useState([]);
+    let [page, setPage] = useState(0);
+    let [finished, setFinished] = useState(false);
     
     const classes = useStyles();
 
-    //https://stackoverflow.com/questions/44474864/compute-determinant-of-a-matrix?newreg=93b9aa02ef824ff1b0df794ca5558376
-    const determinant = m =>  m.length === 1 ? m[0][0] :
-        m.length === 2 ?  m[0][0]*m[1][1]-m[0][1]*m[1][0] :
-        m[0].reduce((r,e,i) => 
-            r+(-1)**(i+2)*e*determinant(
-                m.slice(1).map(
-                    c => c.filter((_,j) => i !== j)
-                )
-            ),
-        0);
+    let drawAdmissiblePlan = (thisFile) => {
+        const { A, b, sign } = thisFile.subjectTo;
+
+        let startLines = lines;
+        let startPolygon = polygon;
+
+        A.forEach((el, i) => {
+            let thisLine = [el[0], el[1], -b[i], sign[i]]
+            startLines = [...startLines, thisLine]
+            startPolygon = onAdd(thisLine, startPolygon);
+        })
+
+
+        setLoading(false);
+
+        setFile(thisFile);
+        setLines(startLines);
+        setPolygon(startPolygon);
+
+        let maxxxX = startPolygon.reduce((acc, curr) =>  Math.max(acc, ...curr), 0) * 2;
+        setMaxX(maxxxX);
+    }
 
     let findIntersection = (line, segment) => {
         let [a, b, c] = line;
@@ -217,11 +162,25 @@ let LPP = () => {
         
     }
 
+    let formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
+
+    let handleHistory = (next = false) => {
+        if(next){
+            //Create new page only if algorithm has not finished and next page does not exist
+            if(!(finished || history[page+1])){
+                onStartAlgorithm();
+            }
+            if(history[0]) setPage(page+1);
+        }
+        else{
+            if(page > 0) setPage(page-1)
+        }
+    }
+
     let getFile = f => {
         setLoading(true);
         if(DEBUG) console.log('FILE:', f)
-        setFile(f);
-        setLoading(false);
+        drawAdmissiblePlan(f);
     }
 
     let onAdd = (line, thisPolygon) => {
@@ -275,7 +234,7 @@ let LPP = () => {
             l_p2 = [maxX, getY(line, maxX, maxX)];
 
         if(polygonLeft.length){
-            let d = determinant([
+            let d = numbers.matrix.determinant([
                 [l_p1[0], l_p2[0], polygonLeft[0][0]],
                 [l_p1[1], l_p2[1], polygonLeft[0][1]],
                 [1, 1, 1],
@@ -284,7 +243,7 @@ let LPP = () => {
             return s*d > 0 ? polygonLeft : polygonRight
         }
         else if(polygonRight.length){
-            let d = determinant([
+            let d = numbers.matrix.determinant([
                 [l_p1[0], l_p2[0], polygonRight[0][0]],
                 [l_p1[1], l_p2[1], polygonRight[0][1]],
                 [1, 1, 1],
@@ -301,143 +260,96 @@ let LPP = () => {
         setZoomLevel(3);
     }
 
-    let printTableau = (c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar) => {
-        console.log('  ', 'c_bar_0', JSON.stringify(x_B_labels), JSON.stringify(x_F_labels));
-        console.log('-z', c_bar_0, JSON.stringify(c_prime_bar_B[0]), JSON.stringify(c_prime_bar_F[0]));
-        for(let l=0; l<b_overbar.length; l++){
-            console.log(x_B_labels[l], b_overbar[l][0], JSON.stringify(B_inv_B[l]), JSON.stringify(F_overbar[l]));
-        }
-        console.log('\n');
-    }
-
     let onStartAlgorithm = () => {
-        const { A, b, sign } = file.subjectTo;
-        const { objectiveFunction: c_prime } = file;
+        const { objectiveFunction: cPrime, subjectTo: { A, b } } = file;
 
-        let startLines = lines;
-        let startPolygon = polygon;
+        const algorithm = require('../algorithms/simplexTableau.js')
 
-        A.forEach((el, i) => {
-            let thisLine = [el[0], el[1], -b[i], sign[i]]
-            startLines = [...startLines, thisLine]
-            startPolygon = onAdd(thisLine, startPolygon);
-        })
-
-        setLines(startLines);
-        setPolygon(startPolygon);
-
-        let B = numbers.matrix.identity(A.length)
-
-        let x_F_labels = _.range(1, A.length+1).map(n => `x${n}`);
-        let x_B_labels = _.range(x_F_labels.length+1, x_F_labels.length+A.length+1).map(n => `x${n}`);
-
-        let B_inv = numbers.matrix.inverse(B);
-        let F = A.slice();
-
-        let B_inv_B = numbers.matrix.multiply(B_inv, B);
-
-        //TRASPOSTO PERCHE' DAL FILE LO STO PASSANDO COME UN VETTORE RIGA, MA DEVE ESSERE UN VETTORE COLONNA
-        let b_prime = numbers.matrix.transpose([b]);
-
-        let b_overbar = numbers.matrix.multiply(B_inv, b_prime);
-
-        let F_overbar =  numbers.matrix.multiply(B_inv, F);
-
-        //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
-        let c_prime_B = numbers.matrix.zeros(1, B.length);
-
-        //VETTORE DEI COSTI DELLE VARIABILI FUORI BASE
-        let c_prime_F = [c_prime.slice()];
-
-        let c_prime_B_b_overbar = numbers.matrix.multiply(c_prime_B, b_overbar);
-        let c_bar_0 = -c_prime_B_b_overbar[0][0];
-
-        //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
-        let c_prime_bar_B = numbers.matrix.zeros(1, B[0].length)
-
-        //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI FUORI BASE
-        let c_prime_B_F_overbar = numbers.matrix.multiply(c_prime_B, F_overbar);
-        let c_prime_bar_F = numbers.matrix.subtraction(c_prime_F, c_prime_B_F_overbar);
-
-        //PER DEFINIZIONE, xB = B^(-1)*b
-        // let x_B = b_overbar.slice();
-
-        //PER DEFINIZIONE, IMPONGO LE VARIABILI FUORI BASE A 0
-        // let x_F = numbers.matrix.zeros(F.length, 1);
-
-        printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
-
-        // Index of the next entering variable
-        let index_h = optimalityTest(c_prime_bar_F[0]);
-
-        let i=2
-        while(index_h != null){
-            console.log('iterations', i)
-
-            // Index of the next leaving variable
-            let index_t = null, min_value = null;
-            // Column of the next entering variable
-            let col_h = numbers.matrix.getCol(F_overbar, index_h);
-            console.log('col_h', col_h)
-
-            b_overbar.forEach((el, idx) => {
-                let value_index_h = el[0] / col_h[idx]
-
-                if(value_index_h > 0){
-                    if(value_index_h < min_value || min_value === null){
-                        min_value = value_index_h;
-                        index_t = idx;
-                    }
-                }
-            })
-
-            console.log('index_t', index_t);
-
-            if(index_t === null) break;
-            
-            let a_th = col_h[index_t];
-            console.log('a_th(PIVOT)', a_th);
-
-            //UPDATING TABLES
-            let z_pivot = c_prime_bar_F[0][index_h];
-
-            b_overbar = numbers.matrix.rowScale(b_overbar, index_t, 1/a_th);
-            B_inv_B = numbers.matrix.rowScale(B_inv_B, index_t, 1/a_th);
-            F_overbar = numbers.matrix.rowScale(F_overbar, index_t, 1/a_th);
-
-            c_bar_0 -= z_pivot*b_overbar[index_t];
-            c_prime_bar_B = numbers.matrix.subtraction(c_prime_bar_B, [numbers.matrix.rowScale(B_inv_B, index_t, z_pivot)[index_t]])
-            c_prime_bar_F = numbers.matrix.subtraction(c_prime_bar_F, [numbers.matrix.rowScale(F_overbar, index_t, z_pivot)[index_t]]);
-            
-            for(let l=0; l<b_overbar.length; l++){
-                if(l === index_t) continue;
-
-                b_overbar = numbers.matrix.rowAddMultiple(b_overbar, index_t, l, -col_h[l]);
-                B_inv_B = numbers.matrix.rowAddMultiple(B_inv_B, index_t, l, -col_h[l]);
-                F_overbar = numbers.matrix.rowAddMultiple(F_overbar, index_t, l, -col_h[l]);
-            }
-            
-            [B_inv_B, F_overbar] = swapColumns(B_inv_B, index_t, F_overbar, index_h);
-            [c_prime_bar_B, c_prime_bar_F] = swapColumns(c_prime_bar_B, index_t, c_prime_bar_F, index_h);
-            [x_B_labels[index_t], x_F_labels[index_h]] = [x_F_labels[index_h], x_B_labels[index_t]];
-
-            printTableau(c_bar_0, x_B_labels, x_F_labels, c_prime_bar_B, c_prime_bar_F, b_overbar, B_inv_B, F_overbar);
-
-            index_h = optimalityTest(c_prime_bar_F[0]);
-
-            if(i>5) break;
-            i++;
+        let newPage = null;
+        if(stage > 0){
+            newPage = JSON.parse(JSON.stringify(history[page])); 
         }
-    }
+        
+        switch(stage){
+            case 0:
+                const initValues = algorithm.init(A, b, cPrime);
+                setHistory([initValues]);
 
-    let onZoom = i => {
-        setZoomLevel(zoomLevel+i);
-        setMaxX(zoomLevel*PASS);
-    }
+                setStage(stage+1);
+                break;
 
-    let optimalityTest = c_prime_F => { 
-        for(let i=0; i < c_prime_F.length; i++) if(c_prime_F[i] < 0) return i;
-        return null
+            case 1:
+                switch(step){
+                    case 0:
+                        newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
+
+                        if(!Number.isInteger(newPage.indexH)) {
+                            setStage(2);
+                            setStep(0);
+                            setFinished(true);
+                        }
+                        else setStep(1);
+
+                        setHistory([...history, newPage]);
+
+                        break;
+
+                    case 1:
+                        const {thisColH, thisIndexT} = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
+                        newPage.colH = thisColH;
+                        newPage.indexT = thisIndexT;
+                        newPage.showPivot = true;
+
+                        setStep(2);
+                        setHistory([...history, newPage]);
+
+                        break;
+
+                    case 2:
+                        let { cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables } = newPage;
+                        const { colH, indexH, indexT } = newPage;
+                        
+                        newPage.showPivot = false;
+
+                        let aTH = colH[indexT];
+
+                        //UPDATING TABLES
+                        let zPivot = cPrimeBarF[0][indexH];
+
+                        bOverbar = numbers.matrix.rowScale(bOverbar, indexT, 1/aTH);
+                        BInvB = numbers.matrix.rowScale(BInvB, indexT, 1/aTH);
+                        FOverbar = numbers.matrix.rowScale(FOverbar, indexT, 1/aTH);
+
+                        cBar0 -= zPivot*bOverbar[indexT];
+
+                        cPrimeBarB = numbers.matrix.subtraction(cPrimeBarB, [numbers.matrix.rowScale(BInvB, indexT, zPivot)[indexT]])
+                        cPrimeBarF = numbers.matrix.subtraction(cPrimeBarF, [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
+                        
+                        for(let l=0; l<bOverbar.length; l++){
+                            if(l === indexT) continue;
+
+                            bOverbar = numbers.matrix.rowAddMultiple(bOverbar, indexT, l, -colH[l]);
+                            BInvB = numbers.matrix.rowAddMultiple(BInvB, indexT, l, -colH[l]);
+                            FOverbar = numbers.matrix.rowAddMultiple(FOverbar, indexT, l, -colH[l]);
+                        }
+                        
+                        [BInvB, FOverbar] = swapColumns(BInvB, indexT, FOverbar, indexH);
+                        [cPrimeBarB, cPrimeBarF] = swapColumns(cPrimeBarB, indexT, cPrimeBarF, indexH);
+
+                        [xBLables[indexT], xFLables[indexH]] = [xFLables[indexH], xBLables[indexT]];
+
+                        newPage = {...newPage, ...{cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables}}
+
+                        setStep(0);
+                        setHistory([...history, newPage]);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     let showMessage = message => {
@@ -445,9 +357,9 @@ let LPP = () => {
         setTimeout(() => setMessage(''), 5000);
     }
 
-    let swapColumns = (B, index_t, F, index_h) => {
+    let swapColumns = (B, indexT, F, indexH) => {
         B.forEach((el, i) => {
-            [el[index_t], F[i][index_h]] = [F[i][index_h], el[index_t]]
+            [el[indexT], F[i][indexH]] = [F[i][indexH], el[indexT]]
         })
 
         return [B, F]
@@ -455,7 +367,7 @@ let LPP = () => {
 
     return (
         <>
-            {!file && <> 
+            {!file && <>
                 <div className={file ? classes.dropClosed : classes.drop}>
                     <Dropzone
                         getFile={getFile}
@@ -480,24 +392,63 @@ let LPP = () => {
                     </Paper>
                 </div>
             </>}
-
-            {file && <>
-                <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
-                <Button variant='outlined' onClick={onClear}>CLEAR</Button>
-                <Button variant='outlined' onClick={() => onZoom(1)}>+</Button>
-                <Button variant='outlined' onClick={() => onZoom(-1)}>-</Button>
-                <Button variant='outlined' onClick={onStartAlgorithm}>{">"}</Button>
-                <PlotGraph 
-                    lines={lines}
-                    level={zoomLevel}
-                    maxX={maxX}
-                    polygon={polygon}
-                    title={(file.type === 'ILP' ? 'Integer ' : '') + 'Linear Programming Problem'}
-                />
-                <div>
-                    {lines.length}
-                </div>
-            </>}
+            {file && <Grid container direction='row'>
+                <Grid container direction='row' item xs={6}>
+                    <Grid item xs={12}>
+                        <PlotGraph 
+                            lines={lines}
+                            level={zoomLevel}
+                            maxX={maxX}
+                            polygon={polygon}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
+                        <Button variant='outlined' onClick={onClear}>CLEAR</Button>
+                        <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
+                        <Button variant='outlined' disabled={!history[page+1] && finished} onClick={() => handleHistory(true)}>{">"}</Button>
+                        {page}
+                    </Grid>
+                </Grid>
+                <Grid container direction='column' item xs={6}>
+                    {page>0 && <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell key="head-empty-1"></TableCell>
+                                <TableCell key="head-empty-2"></TableCell>
+                                {history[page].xBLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
+                                {history[page].xFLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell key='-z'>-z</TableCell>
+                                <TableCell key='cBar0'>{history[page].cBar0}</TableCell>
+                                {history[page].cPrimeBarB[0].map((n, i) => (<TableCell key={`cPrimeBarB${i}`}>{formatNumber(n)}</TableCell>))}
+                                {history[page].cPrimeBarF[0].map((n, i) => (<TableCell key={`cPrimeBarF${i}`}>{formatNumber(n)}</TableCell>))}
+                            </TableRow>
+                            {history[page].xBLables.map((n,i) => (
+                                <TableRow key={`baseValuesRow${i}`}>
+                                    <TableCell key={`baseValues${n}`}>{n}</TableCell>
+                                    <TableCell key={`bOverbar${i}`}>{formatNumber(history[page].bOverbar[i][0])}</TableCell>
+                                    {history[page].BInvB[i].map(n => (<TableCell key={`BInvB${i},${n}`}>{formatNumber(n)}</TableCell>))}
+                                    {history[page].FOverbar[i].map((n,j) => (
+                                        <TableCell 
+                                            className={
+                                                history[page].showPivot && 
+                                                history[page].indexT===i && history[page].indexH===j ? classes.pivot : ''
+                                            } 
+                                            key={`FOverbar${i},${n}`}
+                                        >
+                                            {formatNumber(n)}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>}
+                </Grid>
+            </Grid>}
         </>
     )
 }
