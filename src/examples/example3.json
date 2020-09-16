@@ -1,0 +1,12 @@
+{
+    "variables": ["x1", "x2"],
+    "objectiveFunction": [1, 1],
+    "subjectTo": {
+        "A": [
+            [6, 1],
+            [3, 0]
+        ],
+        "b": [4, 1],
+        "sign": [-1, 1]
+    }
+}

@@ -1,5 +1,4 @@
 {
-    "type": "LP",
     "variables": ["x1", "x2"],
     "objectiveFunction": [-1, -1],
     "subjectTo": {
