@@ -11,7 +11,7 @@ let getPolygonPath = (perimeter) => perimeter.length ? `M${perimeter.reduce((acc
 let PlotGraph = (props) => {
   var drawLines = []
 
-  const { lines, maxX, polygon, title } = props;
+  const { lines, maxX, point, polygon, title } = props;
 
   if(lines) drawLines = lines.map( n => ({
       type: 'line',
@@ -35,6 +35,23 @@ let PlotGraph = (props) => {
       color: 'rgb(0, 0, 184)'
     }
   })
+
+  if(point){
+    shapes.push({
+        type: 'circle',
+        xref: 'x',
+        yref: 'y',
+        x0: point[0]-0.1,
+        y0: point[1]-0.1,
+        x1: point[0]+0.1,
+        y1: point[1]+0.1,
+        opacity: 1,
+        fillcolor: 'green',
+        line: {
+            color: 'green'
+        }
+    })
+  }
   
   return (
     <Plot
