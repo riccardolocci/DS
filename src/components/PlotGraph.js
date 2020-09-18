@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { getY } from '../utils';
+import { getX, getY } from '../utils';
 
 import Plotly from 'plotly.js';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -11,9 +11,41 @@ let getPolygonPath = (perimeter) => perimeter.length ? `M${perimeter.reduce((acc
 let PlotGraph = (props) => {
   var drawLines = []
 
-  const { lines, maxX, polygon, title } = props;
+  const { lines, maxX, point, polygon, title } = props;
 
-  if(lines) drawLines = lines.map( n => ({
+  if(lines) drawLines = lines.map( n => {
+    let commonLine = {
+      type: 'line',
+      line: {
+        color: 'rgb(200, 0, 0)',
+        width: 4,
+        dash: 'dot'
+      }
+    }
+
+    if(n[0] === 0) {
+      const y = getY(n, maxX);
+      const x = getX(n, y);
+
+      return {
+        ...commonLine,
+        x0: -x, y0: y,
+        x1: x, y1: y
+      }
+    }
+
+    if(n[1] === 0) {
+      const x = getX(n, maxX);
+      const y = getY(n, x);
+
+      return {
+        ...commonLine,
+        x0: x, y0: -y,
+        x1: x, y1: y
+      }
+    }
+    
+    return {
       type: 'line',
       x0: -maxX, y0: getY(n, -maxX),
       x1: maxX, y1: getY(n, maxX),
@@ -22,7 +54,9 @@ let PlotGraph = (props) => {
         width: 4,
         dash: 'dot'
       }
-    }));
+    }
+  });
+
 
   let shapes = [...drawLines]
   
@@ -35,6 +69,23 @@ let PlotGraph = (props) => {
       color: 'rgb(0, 0, 184)'
     }
   })
+
+  if(point){
+    shapes.push({
+        type: 'circle',
+        xref: 'x',
+        yref: 'y',
+        x0: point[0]-0.1,
+        y0: point[1]-0.1,
+        x1: point[0]+0.1,
+        y1: point[1]+0.1,
+        opacity: 1,
+        fillcolor: 'green',
+        line: {
+            color: 'green'
+        }
+    })
+  }
   
   return (
     <Plot

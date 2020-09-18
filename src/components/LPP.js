@@ -183,6 +183,16 @@ let LPP = () => {
         drawAdmissiblePlan(f);
     }
 
+    let getPoint = (xBLables, bOverbar) => {
+        let x1Idx = xBLables.indexOf('x1');
+        let x2Idx = xBLables.indexOf('x2');
+
+        let x1 = x1Idx >= 0 ? bOverbar[x1Idx][0] : 0;
+        let x2 = x2Idx >= 0 ? bOverbar[x2Idx][0] : 0;
+
+        return [x1, x2]
+    }
+
     let onAdd = (line, thisPolygon) => {
         const [a, b, c, s] = line;
 
@@ -273,6 +283,7 @@ let LPP = () => {
         switch(stage){
             case 0:
                 const initValues = algorithm.init(A, b, cPrime);
+                initValues.point = getPoint(initValues.xBLables, initValues.bOverbar);
                 setHistory([initValues]);
 
                 setStage(stage+1);
@@ -284,6 +295,34 @@ let LPP = () => {
                         newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
 
                         if(!Number.isInteger(newPage.indexH)) {
+                            if(page === 0){
+                                let bOverbarIndexes = [];
+                                newPage.bOverbar.forEach((el,i) => {if(-el[0] < 0) bOverbarIndexes.push(i)});
+
+                                if(bOverbarIndexes.length > 0){
+                                    // ADMISSIBLE FOR DUAL SIMPLEX
+                                    let nonZeroElements = {}
+                                    bOverbarIndexes.forEach( idx => {
+                                        const count = newPage.FOverbar[idx].filter(n => n>0).length;
+                                        nonZeroElements[count] = count in nonZeroElements ? [...nonZeroElements[count], idx] : [idx];
+                                    });
+                                    const minNonZeroCount = Math.min(...Object.keys(nonZeroElements));
+                                    const multiplyByMinusOne = nonZeroElements[minNonZeroCount];
+
+                                    multiplyByMinusOne.forEach( idx => {
+                                        newPage.bOverbar[idx][0] *= -1;
+                                        newPage.BInvB = numbers.matrix.rowScale(newPage.BInvB, idx, -1);
+                                        newPage.FOverbar = numbers.matrix.rowScale(newPage.FOverbar, idx, -1);
+                                    })
+
+                                    setStep(1);
+                                }
+                                else{
+                                    setStage(2);
+                                    setStep(0);
+                                    setFinished(true);
+                                }
+                            }
                             setStage(2);
                             setStep(0);
                             setFinished(true);
@@ -312,18 +351,27 @@ let LPP = () => {
                         newPage.showPivot = false;
 
                         let aTH = colH[indexT];
+                        // console.log('aTH', aTH);
+                        // console.log('FOverbar', FOverbar);
 
                         //UPDATING TABLES
                         let zPivot = cPrimeBarF[0][indexH];
+                        // console.log('zPivot', zPivot)
 
                         bOverbar = numbers.matrix.rowScale(bOverbar, indexT, 1/aTH);
                         BInvB = numbers.matrix.rowScale(BInvB, indexT, 1/aTH);
                         FOverbar = numbers.matrix.rowScale(FOverbar, indexT, 1/aTH);
+                        
+                        // console.log('FOverbar/aTH', FOverbar);
 
                         cBar0 -= zPivot*bOverbar[indexT];
 
-                        cPrimeBarB = numbers.matrix.subtraction(cPrimeBarB, [numbers.matrix.rowScale(BInvB, indexT, zPivot)[indexT]])
+                        cPrimeBarB = numbers.matrix.subtraction(cPrimeBarB, [numbers.matrix.rowScale(BInvB, indexT, zPivot)[indexT]]);
+
+                        // console.log('cPrimeBarF', cPrimeBarF)
+                        // console.log('[numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]', [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
                         cPrimeBarF = numbers.matrix.subtraction(cPrimeBarF, [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
+                        // console.log('NEW cPrimeBarF', cPrimeBarF)
                         
                         for(let l=0; l<bOverbar.length; l++){
                             if(l === indexT) continue;
@@ -338,7 +386,7 @@ let LPP = () => {
 
                         [xBLables[indexT], xFLables[indexH]] = [xFLables[indexH], xBLables[indexT]];
 
-                        newPage = {...newPage, ...{cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables}}
+                        newPage = {...newPage, ...{cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, point: getPoint(xBLables, bOverbar), xBLables, xFLables}}
 
                         setStep(0);
                         setHistory([...history, newPage]);
@@ -400,6 +448,7 @@ let LPP = () => {
                             level={zoomLevel}
                             maxX={maxX}
                             polygon={polygon}
+                            point={page>0 ? history[page].point : null}
                         />
                     </Grid>
                     <Grid item xs={12}>

@@ -5,12 +5,15 @@ const _ = require('lodash');
 export const findPivot = (bOverbar, FOverbar, indexH) => {
     let thisIndexT = null, minValue = null;
     let thisColH = numbers.matrix.getCol(FOverbar, indexH);
-    console.log('colH', thisColH);
 
     bOverbar.forEach((el, idx) => {
-        let value_indexH = el[0] / thisColH[idx]
+        console.log('el', el);
+        console.log('thisColH[idx]', thisColH[idx]);
 
-        if(value_indexH > 0){
+        if(thisColH[idx] > 0){
+            let value_indexH = el[0] / thisColH[idx];
+            console.log('value_indexH', value_indexH);
+
             if(value_indexH < minValue || minValue === null){
                 minValue = value_indexH;
                 thisIndexT = idx;
@@ -62,6 +65,7 @@ export const init = (A, b, c_prime) => {
 }
 
 export const optimalityTest = c_prime_F => { 
+    console.log('c_prime_F', c_prime_F)
     for(let i=0; i < c_prime_F.length; i++) if(c_prime_F[i] < 0) return i;
     return null
 }
