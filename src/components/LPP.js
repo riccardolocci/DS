@@ -295,6 +295,34 @@ let LPP = () => {
                         newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
 
                         if(!Number.isInteger(newPage.indexH)) {
+                            if(page === 0){
+                                let bOverbarIndexes = [];
+                                newPage.bOverbar.forEach((el,i) => {if(-el[0] < 0) bOverbarIndexes.push(i)});
+
+                                if(bOverbarIndexes.length > 0){
+                                    // ADMISSIBLE FOR DUAL SIMPLEX
+                                    let nonZeroElements = {}
+                                    bOverbarIndexes.forEach( idx => {
+                                        const count = newPage.FOverbar[idx].filter(n => n>0).length;
+                                        nonZeroElements[count] = count in nonZeroElements ? [...nonZeroElements[count], idx] : [idx];
+                                    });
+                                    const minNonZeroCount = Math.min(...Object.keys(nonZeroElements));
+                                    const multiplyByMinusOne = nonZeroElements[minNonZeroCount];
+
+                                    multiplyByMinusOne.forEach( idx => {
+                                        newPage.bOverbar[idx][0] *= -1;
+                                        newPage.BInvB = numbers.matrix.rowScale(newPage.BInvB, idx, -1);
+                                        newPage.FOverbar = numbers.matrix.rowScale(newPage.FOverbar, idx, -1);
+                                    })
+
+                                    setStep(1);
+                                }
+                                else{
+                                    setStage(2);
+                                    setStep(0);
+                                    setFinished(true);
+                                }
+                            }
                             setStage(2);
                             setStep(0);
                             setFinished(true);
