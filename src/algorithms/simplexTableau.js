@@ -1,6 +1,6 @@
+import { matrix } from 'numbers';
 import { getPoint, swapColumns } from '../utils';
 
-const numbers = require('numbers');
 const _ = require('lodash');
 
 
@@ -10,7 +10,7 @@ export const dualFindPivot = (cPrimeBarF, FOverbar, indexT) => {
 
     cPrimeBarF.forEach((el, idx) => {
         if(rowT[idx] < 0){
-            let valueIndexT = el[0] / rowT[idx];
+            let valueIndexT = el[0] / Math.abs(rowT[idx]);
 
             if(valueIndexT < minValue || minValue === null){
                 minValue = valueIndexT;
@@ -29,11 +29,9 @@ export const dualOptimalityTest = (bOverbar) => {
     return null
 }
 
-export const dualUpdateTableau = (prevTableau) => {}
-
 export const findPivot = (bOverbar, FOverbar, indexH) => {
     let indexT = null, minValue = null;
-    let colH = numbers.matrix.getCol(FOverbar, indexH);
+    let colH = matrix.getCol(FOverbar, indexH);
 
     bOverbar.forEach((el, idx) => {
         if(colH[idx] > 0){
@@ -47,42 +45,42 @@ export const findPivot = (bOverbar, FOverbar, indexH) => {
     });
 
     return {
-        colH, indexT, showPivot: true
+        indexT, showPivot: true
     }
 }
 
 export const init = (A, b, cPrime) => {
-    let B = numbers.matrix.identity(A.length)
+    let B = matrix.identity(A.length)
 
     let xFLables = _.range(1, A.length+1).map(n => `x${n}`);
     let xBLables = _.range(xFLables.length+1, xFLables.length+A.length+1).map(n => `x${n}`);
 
-    let BInv = numbers.matrix.inverse(B);
+    let BInv = matrix.inverse(B);
     let F = A.slice();
 
-    let BInvB = numbers.matrix.multiply(BInv, B);
+    let BInvB = matrix.multiply(BInv, B);
 
     //TRASPOSTO PERCHE' DAL FILE LO STO PASSANDO COME UN VETTORE RIGA, MA DEVE ESSERE UN VETTORE COLONNA
-    let bPrime = numbers.matrix.transpose([b]);
+    let bPrime = matrix.transpose([b]);
     
-    let bOverbar = numbers.matrix.multiply(BInv, bPrime);
-    let FOverbar =  numbers.matrix.multiply(BInv, F);
+    let bOverbar = matrix.multiply(BInv, bPrime);
+    let FOverbar =  matrix.multiply(BInv, F);
 
     //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
-    let cPrimeB = numbers.matrix.zeros(1, B.length);
+    let cPrimeB = matrix.zeros(1, B.length);
 
     //VETTORE DEI COSTI DELLE VARIABILI FUORI BASE
     let cPrimeF = [cPrime.slice()];
 
-    let cPrimeBbOverbar = numbers.matrix.multiply(cPrimeB, bOverbar);
+    let cPrimeBbOverbar = matrix.multiply(cPrimeB, bOverbar);
     let cBar0 = -cPrimeBbOverbar[0][0];
 
     //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
-    let cPrimeBarB = numbers.matrix.zeros(1, B[0].length)
+    let cPrimeBarB = matrix.zeros(1, B[0].length)
 
     //VETTORE DEI COSTI RIDOTTI DELLE VARIABILI FUORI BASE
-    let cPrimeBFOverbar = numbers.matrix.multiply(cPrimeB, FOverbar);
-    let cPrimeBarF = numbers.matrix.subtraction(cPrimeF, cPrimeBFOverbar);
+    let cPrimeBFOverbar = matrix.multiply(cPrimeB, FOverbar);
+    let cPrimeBarF = matrix.subtraction(cPrimeF, cPrimeBFOverbar);
 
     let point = getPoint(xBLables, bOverbar);
 
@@ -107,7 +105,9 @@ export const printTableau = (cBar0, xBLables, xFLables, cPrimeBarB, cPrimeBarF, 
 
 export const updateTableau = (prevTableau) => {
     let { cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables } = prevTableau;
-    const { colH, indexH, indexT } = prevTableau;
+    const { indexH, indexT } = prevTableau;
+
+    const colH = matrix.getCol(FOverbar, indexH);
 
     prevTableau.showPivot = false;
 
@@ -116,21 +116,21 @@ export const updateTableau = (prevTableau) => {
     //UPDATING TABLES
     let zPivot = cPrimeBarF[0][indexH];
 
-    bOverbar = numbers.matrix.rowScale(bOverbar, indexT, 1/aTH);
-    BInvB = numbers.matrix.rowScale(BInvB, indexT, 1/aTH);
-    FOverbar = numbers.matrix.rowScale(FOverbar, indexT, 1/aTH);
+    bOverbar = matrix.rowScale(bOverbar, indexT, 1/aTH);
+    BInvB = matrix.rowScale(BInvB, indexT, 1/aTH);
+    FOverbar = matrix.rowScale(FOverbar, indexT, 1/aTH);
 
     cBar0 -= zPivot*bOverbar[indexT];
 
-    cPrimeBarB = numbers.matrix.subtraction(cPrimeBarB, [numbers.matrix.rowScale(BInvB, indexT, zPivot)[indexT]]);
-    cPrimeBarF = numbers.matrix.subtraction(cPrimeBarF, [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
+    cPrimeBarB = matrix.subtraction(cPrimeBarB, [matrix.rowScale(BInvB, indexT, zPivot)[indexT]]);
+    cPrimeBarF = matrix.subtraction(cPrimeBarF, [matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
     
     for(let l=0; l<bOverbar.length; l++){
         if(l === indexT) continue;
 
-        bOverbar = numbers.matrix.rowAddMultiple(bOverbar, indexT, l, -colH[l]);
-        BInvB = numbers.matrix.rowAddMultiple(BInvB, indexT, l, -colH[l]);
-        FOverbar = numbers.matrix.rowAddMultiple(FOverbar, indexT, l, -colH[l]);
+        bOverbar = matrix.rowAddMultiple(bOverbar, indexT, l, -colH[l]);
+        BInvB = matrix.rowAddMultiple(BInvB, indexT, l, -colH[l]);
+        FOverbar = matrix.rowAddMultiple(FOverbar, indexT, l, -colH[l]);
     }
     
     [BInvB, FOverbar] = swapColumns(BInvB, indexT, FOverbar, indexH);

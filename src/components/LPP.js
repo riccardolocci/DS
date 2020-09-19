@@ -300,9 +300,8 @@ let LPP = () => {
 
                                     multiplyByMinusOne.forEach( idx => {
                                         newPage.bOverbar[idx][0] *= -1;
-                                        newPage.BInvB = numbers.matrix.rowScale(newPage.BInvB, idx, -1);
                                         newPage.FOverbar = numbers.matrix.rowScale(newPage.FOverbar, idx, -1);
-                                    })
+                                    });
 
                                     setStage(2);
                                     setStep(0);
@@ -314,9 +313,12 @@ let LPP = () => {
                                     setFinished(true);
                                 }
                             }
-                            setStage(3);
-                            setStep(0);
-                            setFinished(true);
+                            else{
+                                // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                setStage(3);
+                                setStep(0);
+                                setFinished(true);
+                            }
                         }
                         else setStep(1);
 
@@ -346,7 +348,6 @@ let LPP = () => {
             case 2:
                 switch(step){
                     case 0:
-                        console.log('AAAAAAAA')
                         newPage.indexT = algorithm.dualOptimalityTest(newPage.bOverbar);
 
                         if(!Number.isInteger(newPage.indexT)) {
