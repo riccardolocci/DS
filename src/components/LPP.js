@@ -183,16 +183,6 @@ let LPP = () => {
         drawAdmissiblePlan(f);
     }
 
-    let getPoint = (xBLables, bOverbar) => {
-        let x1Idx = xBLables.indexOf('x1');
-        let x2Idx = xBLables.indexOf('x2');
-
-        let x1 = x1Idx >= 0 ? bOverbar[x1Idx][0] : 0;
-        let x2 = x2Idx >= 0 ? bOverbar[x2Idx][0] : 0;
-
-        return [x1, x2]
-    }
-
     let onAdd = (line, thisPolygon) => {
         const [a, b, c, s] = line;
 
@@ -283,9 +273,8 @@ let LPP = () => {
         switch(stage){
             case 0:
                 const initValues = algorithm.init(A, b, cPrime);
-                initValues.point = getPoint(initValues.xBLables, initValues.bOverbar);
-                setHistory([initValues]);
 
+                setHistory([initValues]);
                 setStage(stage+1);
                 break;
 
@@ -311,19 +300,58 @@ let LPP = () => {
 
                                     multiplyByMinusOne.forEach( idx => {
                                         newPage.bOverbar[idx][0] *= -1;
-                                        newPage.BInvB = numbers.matrix.rowScale(newPage.BInvB, idx, -1);
                                         newPage.FOverbar = numbers.matrix.rowScale(newPage.FOverbar, idx, -1);
-                                    })
+                                    });
 
-                                    setStep(1);
+                                    setStage(2);
+                                    setStep(0);
                                 }
                                 else{
-                                    setStage(2);
+                                    // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                    setStage(3);
                                     setStep(0);
                                     setFinished(true);
                                 }
                             }
-                            setStage(2);
+                            else{
+                                // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                setStage(3);
+                                setStep(0);
+                                setFinished(true);
+                            }
+                        }
+                        else setStep(1);
+
+                        setHistory([...history, newPage]);
+
+                        break;
+
+                    case 1:
+                        const pivot = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
+                        newPage = {...newPage, ...pivot};
+
+                        setStep(2);
+                        setHistory([...history, newPage]);
+
+                        break;
+
+                    case 2:
+                        newPage = algorithm.updateTableau(newPage);
+
+                        setStep(0);
+                        setHistory([...history, newPage]);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 2:
+                switch(step){
+                    case 0:
+                        newPage.indexT = algorithm.dualOptimalityTest(newPage.bOverbar);
+
+                        if(!Number.isInteger(newPage.indexT)) {
+                            setStage(3);
                             setStep(0);
                             setFinished(true);
                         }
@@ -334,10 +362,8 @@ let LPP = () => {
                         break;
 
                     case 1:
-                        const {thisColH, thisIndexT} = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
-                        newPage.colH = thisColH;
-                        newPage.indexT = thisIndexT;
-                        newPage.showPivot = true;
+                        const pivot = algorithm.dualFindPivot(newPage.cPrimeBarF, newPage.FOverbar, newPage.indexT);
+                        newPage = {...newPage, ...pivot};
 
                         setStep(2);
                         setHistory([...history, newPage]);
@@ -345,48 +371,7 @@ let LPP = () => {
                         break;
 
                     case 2:
-                        let { cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables } = newPage;
-                        const { colH, indexH, indexT } = newPage;
-                        
-                        newPage.showPivot = false;
-
-                        let aTH = colH[indexT];
-                        // console.log('aTH', aTH);
-                        // console.log('FOverbar', FOverbar);
-
-                        //UPDATING TABLES
-                        let zPivot = cPrimeBarF[0][indexH];
-                        // console.log('zPivot', zPivot)
-
-                        bOverbar = numbers.matrix.rowScale(bOverbar, indexT, 1/aTH);
-                        BInvB = numbers.matrix.rowScale(BInvB, indexT, 1/aTH);
-                        FOverbar = numbers.matrix.rowScale(FOverbar, indexT, 1/aTH);
-                        
-                        // console.log('FOverbar/aTH', FOverbar);
-
-                        cBar0 -= zPivot*bOverbar[indexT];
-
-                        cPrimeBarB = numbers.matrix.subtraction(cPrimeBarB, [numbers.matrix.rowScale(BInvB, indexT, zPivot)[indexT]]);
-
-                        // console.log('cPrimeBarF', cPrimeBarF)
-                        // console.log('[numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]', [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
-                        cPrimeBarF = numbers.matrix.subtraction(cPrimeBarF, [numbers.matrix.rowScale(FOverbar, indexT, zPivot)[indexT]]);
-                        // console.log('NEW cPrimeBarF', cPrimeBarF)
-                        
-                        for(let l=0; l<bOverbar.length; l++){
-                            if(l === indexT) continue;
-
-                            bOverbar = numbers.matrix.rowAddMultiple(bOverbar, indexT, l, -colH[l]);
-                            BInvB = numbers.matrix.rowAddMultiple(BInvB, indexT, l, -colH[l]);
-                            FOverbar = numbers.matrix.rowAddMultiple(FOverbar, indexT, l, -colH[l]);
-                        }
-                        
-                        [BInvB, FOverbar] = swapColumns(BInvB, indexT, FOverbar, indexH);
-                        [cPrimeBarB, cPrimeBarF] = swapColumns(cPrimeBarB, indexT, cPrimeBarF, indexH);
-
-                        [xBLables[indexT], xFLables[indexH]] = [xFLables[indexH], xBLables[indexT]];
-
-                        newPage = {...newPage, ...{cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, point: getPoint(xBLables, bOverbar), xBLables, xFLables}}
+                        newPage = algorithm.updateTableau(newPage);
 
                         setStep(0);
                         setHistory([...history, newPage]);
@@ -403,14 +388,6 @@ let LPP = () => {
     let showMessage = message => {
         setMessage(message);
         setTimeout(() => setMessage(''), 5000);
-    }
-
-    let swapColumns = (B, indexT, F, indexH) => {
-        B.forEach((el, i) => {
-            [el[indexT], F[i][indexH]] = [F[i][indexH], el[indexT]]
-        })
-
-        return [B, F]
     }
 
     return (
@@ -487,7 +464,7 @@ let LPP = () => {
                                                 history[page].showPivot && 
                                                 history[page].indexT===i && history[page].indexH===j ? classes.pivot : ''
                                             } 
-                                            key={`FOverbar${i},${n}`}
+                                            key={`FOverbar${j}_${i},${n}`}
                                         >
                                             {formatNumber(n)}
                                         </TableCell>
