@@ -167,8 +167,8 @@ let LPP = () => {
     let handleHistory = (next = false) => {
         if(next){
             //Create new page only if algorithm has not finished and next page does not exist
-            if(!(finished || history[page+1])){
-                onStartAlgorithm();
+            if(!((history[page] && finished) || history[page+1])){
+                onSimplexAlgorithm();
             }
             if(history[0]) setPage(page+1);
         }
@@ -260,7 +260,95 @@ let LPP = () => {
         setZoomLevel(3);
     }
 
-    let onStartAlgorithm = () => {
+    let onIntegerSimplexAlgorithm = () => {
+        const algorithm = require('../algorithms/cuttingPlane.js')
+
+        // let newPage = null;
+        // if(stage > 0){
+        //     newPage = JSON.parse(JSON.stringify(history[page])); 
+        // }
+
+        do{
+            handleHistory(true);
+        }while(history[page] && !finished);
+
+        console.log('page', page)
+
+        while(!algorithm.optimalityTest(history[page].cBar0)){
+            //FIND GENERATING ROW
+            const indexT = history[page].bOverbar.forEach((el, i) => {
+                if(!algorithm.optimalityTest(el)) return i
+            });
+
+            console.log('indexT', indexT)
+
+            const x1Index = history[page].xBLables.indexOf('x1');
+            const x2Index = history[page].xBLables.indexOf('x2');
+
+            const bOverbarT = history[page].bOverbar[indexT][0];
+            const BInvBT = history[page].BInvB[indexT];
+            const FOverbarT = history[page].FOverbar[indexT];
+            
+            const bOverbarTFloor = Math.floor(bOverbarT);
+            const BInvBTFloor = BInvBT.map(n => Math.floor(n));
+            const FOverbarTFloor = FOverbarT.map(n => Math.floor(n));
+            
+            const newLine = [
+                x1Index > 0 ? BInvBTFloor[x1Index] : FOverbarTFloor[x1Index],
+                x2Index > 0 ? BInvBTFloor[x2Index] : FOverbarTFloor[x2Index],
+                -bOverbarTFloor,
+                -1
+            ]
+
+            onAdd(newLine, polygon);
+
+            //ADDING NEW CONSTRAINT
+            const newSlackIndex = history[page].xBLables.length + history[page].xFLables.length;
+
+            history[page].xBLables.push(`x${newSlackIndex}`);
+            history[page].bOverbar.push([bOverbarTFloor - bOverbarT]);
+            history[page].BInvB.push(...numbers.matrix.subtraction([BInvBTFloor], [BInvBT]));
+
+            //BECAUSE BEFORE THERE WHERE bOverbarT.length BASE ELEMENTS, NOW bOverbarT.length+1
+            history[page].BInvB = history[page].BInvB.map((n,i) => [...n, i === bOverbarT.length ? 1 : 0]);
+
+            history[page].FOverbar.push(...numbers.matrix.subtraction([FOverbarTFloor], [FOverbarT]));
+
+            //DUAL SIMPLEX
+            setStage(2);
+            setStep(0);
+
+            do{
+                handleHistory(true);
+            }while(history[page] && !finished);
+        }
+
+        // switch(newPage){
+        //     case 0:
+        //         //COMPUTE SIMPLEX
+        //         break;
+        //     case 1:
+        //         //CHECK INTEGRALITY
+        //         if(algorithm.optimalityTest(newPage.cBar0)){
+
+        //         }
+        //         break;
+        //     case 2:
+        //         //FIND CUT
+        //         break;
+        //     case 3:
+        //         //APPLY CUT
+        //         break;
+        //     case 4:
+        //         //FIND NEW X* BY DUAL SYMPLEX
+        //         //REPEAT FROM 1
+        //         break;
+        //     default:
+        //         break;
+        // }
+    }
+
+    let onSimplexAlgorithm = () => {
         const { objectiveFunction: cPrime, subjectTo: { A, b } } = file;
 
         const algorithm = require('../algorithms/simplexTableau.js')
@@ -308,16 +396,14 @@ let LPP = () => {
                                 }
                                 else{
                                     // NOT ADMISSIBLE FOR DUAL SIMPLEX
-                                    setStage(3);
-                                    setStep(0);
-                                    setFinished(true);
+                                    // setFinished(true);
+                                    setFinished(true);;
                                 }
                             }
                             else{
                                 // NOT ADMISSIBLE FOR DUAL SIMPLEX
-                                setStage(3);
-                                setStep(0);
-                                setFinished(true);
+                                // setFinished(true);
+                                setFinished(true);;
                             }
                         }
                         else setStep(1);
@@ -350,11 +436,7 @@ let LPP = () => {
                     case 0:
                         newPage.indexT = algorithm.dualOptimalityTest(newPage.bOverbar);
 
-                        if(!Number.isInteger(newPage.indexT)) {
-                            setStage(3);
-                            setStep(0);
-                            setFinished(true);
-                        }
+                        if(!Number.isInteger(newPage.indexT)) setFinished(true);
                         else setStep(1);
 
                         setHistory([...history, newPage]);
@@ -432,7 +514,8 @@ let LPP = () => {
                         <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
                         <Button variant='outlined' onClick={onClear}>CLEAR</Button>
                         <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
-                        <Button variant='outlined' disabled={!history[page+1] && finished} onClick={() => handleHistory(true)}>{">"}</Button>
+                        <Button variant='outlined' disabled={!history[page+1] && history[page] && finished} onClick={() => handleHistory(true)}>{">"}</Button>
+                        <Button variant='outlined' onClick={() => onIntegerSimplexAlgorithm()}>CUTTING PLANE</Button>
                         {page}
                     </Grid>
                 </Grid>

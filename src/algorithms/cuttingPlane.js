@@ -1,0 +1,1 @@
+export const optimalityTest = (cBar0) => Number.isInteger(cBar0);
