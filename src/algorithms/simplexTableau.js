@@ -8,22 +8,22 @@ export const dualFindPivot = (cPrimeBarF, FOverbar, indexT, xFLabels) => {
     let indexH = null, minValue = null;
     let rowT = FOverbar[indexT];
 
-    console.log('cPrimeBarF', cPrimeBarF)
+    // console.log('cPrimeBarF', cPrimeBarF)
 
     cPrimeBarF[0].forEach((el, idx) => {
         if(rowT[idx] < 0){
             let valueIndexT = el / Math.abs(rowT[idx]);
 
-            console.log('valueIndexT', valueIndexT);
-            console.log('minValue', minValue);
+            // console.log('valueIndexT', valueIndexT);
+            // console.log('minValue', minValue);
 
             //Bland's rule (Dual)
             if(valueIndexT === minValue){
                 const minLabelInt = parseInt(xFLabels[indexH].replace('x', ''));
                 const valueIndexTLabelInt = parseInt(xFLabels[idx].replace('x', ''));
 
-                console.log('xFLabels[indexH]', xFLabels[indexH], minLabelInt);
-                console.log('xFLabels[idx]', xFLabels[idx], valueIndexTLabelInt);
+                // console.log('xFLabels[indexH]', xFLabels[indexH], minLabelInt);
+                // console.log('xFLabels[idx]', xFLabels[idx], valueIndexTLabelInt);
 
                 if(valueIndexTLabelInt < minLabelInt){
                     minValue = valueIndexT;
@@ -84,7 +84,7 @@ export const init = (A, b, cPrime) => {
     let bOverbar = matrix.multiply(BInv, bPrime);
     let FOverbar = matrix.multiply(BInv, F);
 
-    console.log('FOverbar', FOverbar)
+    // console.log('FOverbar', FOverbar)
 
     //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
     let cPrimeB = matrix.zeros(1, B.length);
@@ -107,15 +107,15 @@ export const init = (A, b, cPrime) => {
     let slacks = {}
 
     xBLabels.forEach((el,i) => {
-        console.log('FOverbar[i]', FOverbar[i])
-        console.log(el, FOverbar[i].map(n => -n), bOverbar[i][0])
+        // console.log('FOverbar[i]', FOverbar[i])
+        // console.log(el, FOverbar[i].map(n => -n), bOverbar[i][0])
         slacks[el] = [
             ...FOverbar[i].map(n => -n),
             bOverbar[i][0]
         ]
     })
 
-    console.log('slacks', slacks)
+    // console.log('slacks', slacks)
 
     return {
         cBar0, xBLabels, xFLabels, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar, point, slacks

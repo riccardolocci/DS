@@ -21,11 +21,11 @@ export const computeSlackOrLine = (slacks, bOverbarRim, BInvBRim, xBLabels, FOve
             a = BInvBRim[x1Index];
 
             xBLabels.forEach((el, i) => {
-                if(i !== x1Index && BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); console.log('Entra', el);}
+                if(i !== x1Index && BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); /*console.log('Entra', el);*/}
             })
 
             xFLabels.forEach((el, i) => {
-                if(i!== x2Index && FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); console.log('Entra', el);}
+                if(i!== x2Index && FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); /*console.log('Entra', el);*/}
             })
         }
         //x2 in base
@@ -36,11 +36,11 @@ export const computeSlackOrLine = (slacks, bOverbarRim, BInvBRim, xBLabels, FOve
             b = BInvBRim[x2Index];
 
             xBLabels.forEach((el, i) => {
-                if(i!== x2Index && BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); console.log('Entra', el);}
+                if(i!== x2Index && BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); /*console.log('Entra', el);*/}
             })
 
             xFLabels.forEach((el, i) => {
-                if(i !== x1Index && FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); console.log('Entra', el);}
+                if(i !== x1Index && FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); /*console.log('Entra', el);*/}
             })
         }
     }
@@ -52,11 +52,11 @@ export const computeSlackOrLine = (slacks, bOverbarRim, BInvBRim, xBLabels, FOve
             b = BInvBRim[x2Index];
 
             xBLabels.forEach((el, i) => {
-                if(i !== x1Index && i!== x2Index && BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); console.log('Entra', el);}
+                if(i !== x1Index && i!== x2Index && BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); /*console.log('Entra', el);*/}
             })
 
             xFLabels.forEach((el, i) => {
-                if(FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); console.log('Entra', el);}
+                if(FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); /*console.log('Entra', el);*/}
             })
         }
         //both out of base
@@ -68,25 +68,27 @@ export const computeSlackOrLine = (slacks, bOverbarRim, BInvBRim, xBLabels, FOve
             b = FOverbarRim[x2Index];
 
             xFLabels.forEach((el, i) => {
-                if(i !== x1Index && i!== x2Index && FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); console.log('Entra', el);}
+                if(i !== x1Index && i!== x2Index && FOverbarRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*FOverbarRim[i])); /*console.log('Entra', el);*/}
             })
 
             xBLabels.forEach((el, i) => {
-                if(BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); console.log('Entra', el);}
+                if(BInvBRim[i] !== 0) {toAdd.push(slacks[el].map(n => sign*n*BInvBRim[i])); /*console.log('Entra', el);*/}
             })
         }
     }
 
-    console.log('base', [a, b, bOverbarRim])
-    console.log('slacks', slacks)
-    console.log('toAdd', toAdd)
+    // console.log('base', [a, b, bOverbarRim])
+    // console.log('slacks', slacks)
+    // console.log('toAdd', toAdd)
     const slack = toAdd.reduce((prev, curr) => curr.map((el, i) => el + prev[i]), [a, b, bOverbarRim]); 
-    console.log('slack', slack)
+    // console.log('slack', slack)
 
     return mode === 'line' ? [...slack, -1] : slack//toAdd.reduce((prev, curr) => curr.map((el, i) => el + prev[i]), [a, b, bOverbarRim]);
 }
 
 export const optimalityTest = (xStar) => {
-    console.log('xStar', xStar)
+    //INFEASIBLE SOLUTION
+    if(xStar.some(n => n<0)) return null;
+
     return xStar.findIndex(x => !Number.isInteger(formatNumber(x[0])));
 }
