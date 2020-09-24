@@ -1,3 +1,5 @@
+export const formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
+
 export const getPoint = (xBLables, bOverbar) => {
     let x1Idx = xBLables.indexOf('x1');
     let x2Idx = xBLables.indexOf('x2');

@@ -7,7 +7,7 @@ import RandomManager from './RandomManager';
 
 import { Button, Grid, Paper, Table, TableRow, TableHead, TableCell, TableBody } from '@material-ui/core';
 
-import { getY } from '../utils';
+import { formatNumber, getY } from '../utils';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 
@@ -163,7 +163,8 @@ let LPP = () => {
         
     }
 
-    let formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
+    // let formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
+    // let formatNumber = (num) => num;
 
     let handleHistory = (next = false) => {
         if(next){
@@ -210,6 +211,8 @@ let LPP = () => {
 
             let intersection = findIntersection(line, [p1, p2]);
 
+            console.log('intersection', intersection)
+
             if(intersection){
                 if(intersections.length === 1){
                     currentPolygon.push(p1);
@@ -234,13 +237,17 @@ let LPP = () => {
         let l_p1 = [-maxX, getY(line, -maxX, maxX)],
             l_p2 = [maxX, getY(line, maxX, maxX)];
 
+        console.log('polygonLeft', polygonLeft)
+        console.log('polygonRight', polygonRight)
+
         if(polygonLeft.length){
             let d = numbers.matrix.determinant([
                 [l_p1[0], l_p2[0], polygonLeft[0][0]],
                 [l_p1[1], l_p2[1], polygonLeft[0][1]],
                 [1, 1, 1],
             ]);
-
+            
+            console.log('polygonLeft s*d', s*d)
             return s*d > 0 ? polygonLeft : polygonRight
         }
         else if(polygonRight.length){
@@ -250,6 +257,7 @@ let LPP = () => {
                 [1, 1, 1],
             ]);
 
+            console.log('polygonRight s*d', s*d)
             return s*d > 0 ? polygonRight : polygonLeft
         }
     }
@@ -364,6 +372,8 @@ let LPP = () => {
                 // }
 
                 newPage.genRowIndex = algorithm.optimalityTest(newPage.bOverbar);
+
+                console.log('newPage.genRowIndex', newPage.genRowIndex);
 
                 if(newPage.genRowIndex < 0){
                     setPhase(5);
@@ -527,7 +537,22 @@ let LPP = () => {
                                     multiplyByMinusOne.forEach( idx => {
                                         newPage.bOverbar[idx][0] *= -1;
                                         newPage.FOverbar = numbers.matrix.rowScale(newPage.FOverbar, idx, -1);
+
+                                        const slack = newPage.xBLabels[idx];
+                                        newPage.slacks[slack] = [
+                                            ...newPage.FOverbar[idx].map(n => -n),
+                                            newPage.bOverbar[idx][0]
+                                        ]
                                     });
+
+                                    // newPage.xBLabels.forEach((el,i) => {
+                                    //     // console.log('FOverbar[i]', FOverbar[i])
+                                    //     // console.log(el, FOverbar[i].map(n => -n), bOverbar[i][0])
+                                    //     newPage.slacks[el] = [
+                                    //         ...FOverbar[i].map(n => -n),
+                                    //         bOverbar[i][0]
+                                    //     ]
+                                    // })
 
                                     setStage(2);
                                     setStep(0);
@@ -536,12 +561,22 @@ let LPP = () => {
                                     // NOT ADMISSIBLE FOR DUAL SIMPLEX
                                     // setFinished(true);
                                     setFinished(true);;
+                                    // newPage.bOverbar.map(n => n.map(n1 => formatNumber(n1)));
+                                    // newPage.BInvB.map(n => n.map(n1 => formatNumber(n1)));
+                                    // newPage.FOverbar.map(n => n.map(n1 => formatNumber(n1)));
+                                    // newPage.cPrimeBarB.map(n => n.map(n1 => formatNumber(n1)));
+                                    // newPage.cPrimeBarF.map(n => n.map(n1 => formatNumber(n1)));
                                 }
                             }
                             else{
                                 // NOT ADMISSIBLE FOR DUAL SIMPLEX
                                 // setFinished(true);
                                 setFinished(true);;
+                                // newPage.bOverbar.map(n => n.map(n1 => formatNumber(n1)));
+                                // newPage.BInvB.map(n => n.map(n1 => formatNumber(n1)));
+                                // newPage.FOverbar.map(n => n.map(n1 => formatNumber(n1)));
+                                // newPage.cPrimeBarB.map(n => n.map(n1 => formatNumber(n1)));
+                                // newPage.cPrimeBarF.map(n => n.map(n1 => formatNumber(n1)));
                             }
                         }
                         else setStep(1);
@@ -562,6 +597,12 @@ let LPP = () => {
                     case 2:
                         newPage = algorithm.updateTableau(newPage);
 
+                        // newPage.bOverbar = newPage.bOverbar.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.BInvB = newPage.BInvB.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.FOverbar = newPage.FOverbar.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.cPrimeBarB = newPage.cPrimeBarB.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.cPrimeBarF = newPage.cPrimeBarF.map(n => n.map(n1 => formatNumberr(n1)));
+
                         setStep(0);
                         setHistory([...history, newPage]);
                         break;
@@ -574,7 +615,14 @@ let LPP = () => {
                     case 0:
                         newPage.indexT = algorithm.dualOptimalityTest(newPage.bOverbar);
 
-                        if(!Number.isInteger(newPage.indexT)) setFinished(true);
+                        if(!Number.isInteger(newPage.indexT)){
+                            setFinished(true);
+                            // newPage.bOverbar.map(n => n.map(n1 => formatNumber(n1)));
+                            // newPage.BInvB.map(n => n.map(n1 => formatNumber(n1)));
+                            // newPage.FOverbar.map(n => n.map(n1 => formatNumber(n1)));
+                            // newPage.cPrimeBarB.map(n => n.map(n1 => formatNumber(n1)));
+                            // newPage.cPrimeBarF.map(n => n.map(n1 => formatNumber(n1)));
+                        }
                         else setStep(1);
 
                         setHistory([...history, newPage]);
@@ -592,6 +640,12 @@ let LPP = () => {
 
                     case 2:
                         newPage = algorithm.updateTableau(newPage);
+
+                        // newPage.bOverbar = newPage.bOverbar.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.BInvB = newPage.BInvB.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.FOverbar = newPage.FOverbar.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.cPrimeBarB = newPage.cPrimeBarB.map(n => n.map(n1 => formatNumberr(n1)));
+                        // newPage.cPrimeBarF = newPage.cPrimeBarF.map(n => n.map(n1 => formatNumberr(n1)));
 
                         setStep(0);
                         setHistory([...history, newPage]);
@@ -670,7 +724,7 @@ let LPP = () => {
                         <TableBody>
                             <TableRow>
                                 <TableCell key='-z'>-z</TableCell>
-                                <TableCell key='cBar0'>{history[page].cBar0}</TableCell>
+                                <TableCell key='cBar0'>{formatNumber(history[page].cBar0)}</TableCell>
                                 {history[page].cPrimeBarB[0].map((n, i) => (<TableCell key={`cPrimeBarB${i}`}>{formatNumber(n)}</TableCell>))}
                                 {history[page].cPrimeBarF[0].map((n, i) => (<TableCell key={`cPrimeBarF${i}`}>{formatNumber(n)}</TableCell>))}
                             </TableRow>

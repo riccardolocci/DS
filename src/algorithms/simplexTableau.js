@@ -82,7 +82,9 @@ export const init = (A, b, cPrime) => {
     let bPrime = matrix.transpose([b]);
     
     let bOverbar = matrix.multiply(BInv, bPrime);
-    let FOverbar =  matrix.multiply(BInv, F);
+    let FOverbar = matrix.multiply(BInv, F);
+
+    console.log('FOverbar', FOverbar)
 
     //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
     let cPrimeB = matrix.zeros(1, B.length);
@@ -105,11 +107,15 @@ export const init = (A, b, cPrime) => {
     let slacks = {}
 
     xBLabels.forEach((el,i) => {
+        console.log('FOverbar[i]', FOverbar[i])
+        console.log(el, FOverbar[i].map(n => -n), bOverbar[i][0])
         slacks[el] = [
             ...FOverbar[i].map(n => -n),
             bOverbar[i][0]
         ]
     })
+
+    console.log('slacks', slacks)
 
     return {
         cBar0, xBLabels, xFLabels, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar, point, slacks
