@@ -73,6 +73,11 @@ let PlotGraph = (props) => {
     feasibleRegionYs.push(el[1]);
   });
 
+  if(!feasibleRegion.length){
+    feasibleRegionXs = [null];
+    feasibleRegionYs = [null];
+  }
+
   const data = [{
     marker: {
       color: 'blue',
@@ -93,7 +98,7 @@ let PlotGraph = (props) => {
     type: 'scatter',
     x: [point ? point[0] : null],
     y: [point ? point[1] : null]
-  }]
+  }];
   
   return (
     <Plot
