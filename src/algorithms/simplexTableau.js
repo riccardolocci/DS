@@ -4,15 +4,25 @@ import { getPoint, swapColumns } from '../utils';
 const _ = require('lodash');
 
 
-export const dualFindPivot = (cPrimeBarF, FOverbar, indexT) => {
+export const dualFindPivot = (cPrimeBarF, FOverbar, indexT, xFLabels) => {
     let indexH = null, minValue = null;
     let rowT = FOverbar[indexT];
 
-    cPrimeBarF.forEach((el, idx) => {
+    cPrimeBarF[0].forEach((el, idx) => {
         if(rowT[idx] < 0){
-            let valueIndexT = el[0] / Math.abs(rowT[idx]);
+            let valueIndexT = el / Math.abs(rowT[idx]);
 
-            if(valueIndexT < minValue || minValue === null){
+            //Bland's rule (Dual)
+            if(valueIndexT === minValue){
+                const minLabelInt = parseInt(xFLabels[indexH].replace('x', ''));
+                const valueIndexTLabelInt = parseInt(xFLabels[idx].replace('x', ''));
+
+                if(valueIndexTLabelInt < minLabelInt){
+                    minValue = valueIndexT;
+                    indexH = idx;
+                }
+            }
+            else if(valueIndexT < minValue || minValue === null){
                 minValue = valueIndexT;
                 indexH = idx;
             }
@@ -52,8 +62,8 @@ export const findPivot = (bOverbar, FOverbar, indexH) => {
 export const init = (A, b, cPrime) => {
     let B = matrix.identity(A.length)
 
-    let xFLables = _.range(1, A.length+1).map(n => `x${n}`);
-    let xBLables = _.range(xFLables.length+1, xFLables.length+A.length+1).map(n => `x${n}`);
+    let xFLabels = _.range(1, A.length+1).map(n => `x${n}`);
+    let xBLabels = _.range(xFLabels.length+1, xFLabels.length+A.length+1).map(n => `x${n}`);
 
     let BInv = matrix.inverse(B);
     let F = A.slice();
@@ -64,7 +74,7 @@ export const init = (A, b, cPrime) => {
     let bPrime = matrix.transpose([b]);
     
     let bOverbar = matrix.multiply(BInv, bPrime);
-    let FOverbar =  matrix.multiply(BInv, F);
+    let FOverbar = matrix.multiply(BInv, F);
 
     //VETTORE DEI COSTI DELLE VARIABILI IN BASE: NULLO ALL'INIZIO PERCHE' HO LE SLACK IN BASE
     let cPrimeB = matrix.zeros(1, B.length);
@@ -82,29 +92,37 @@ export const init = (A, b, cPrime) => {
     let cPrimeBFOverbar = matrix.multiply(cPrimeB, FOverbar);
     let cPrimeBarF = matrix.subtraction(cPrimeF, cPrimeBFOverbar);
 
-    let point = getPoint(xBLables, bOverbar);
+    let point = getPoint(xBLabels, bOverbar);
+
+    let slacks = {}
+
+    xBLabels.forEach((el,i) => {
+        slacks[el] = [
+            ...FOverbar[i].map(n => -n),
+            bOverbar[i][0]
+        ]
+    });
 
     return {
-        cBar0, xBLables, xFLables, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar, point
+        cBar0, xBLabels, xFLabels, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar, point, slacks
     }
 }
 
 export const optimalityTest = cPrimeF => {
     for(let i=0; i < cPrimeF.length; i++) if(cPrimeF[i] < 0) return i;
-    return null
 }
 
-export const printTableau = (cBar0, xBLables, xFLables, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar) => {
-    console.log('  ', 'cBar0', JSON.stringify(xBLables), JSON.stringify(xFLables));
+export const printTableau = (cBar0, xBLabels, xFLabels, cPrimeBarB, cPrimeBarF, bOverbar, BInvB, FOverbar) => {
+    console.log('  ', 'cBar0', JSON.stringify(xBLabels), JSON.stringify(xFLabels));
     console.log('-z', cBar0, JSON.stringify(cPrimeBarB[0]), JSON.stringify(cPrimeBarF[0]));
     for(let l=0; l<bOverbar.length; l++){
-        console.log(xBLables[l], bOverbar[l][0], JSON.stringify(BInvB[l]), JSON.stringify(FOverbar[l]));
+        console.log(xBLabels[l], bOverbar[l][0], JSON.stringify(BInvB[l]), JSON.stringify(FOverbar[l]));
     }
     console.log('\n');
 }
 
 export const updateTableau = (prevTableau) => {
-    let { cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLables, xFLables } = prevTableau;
+    let { cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, xBLabels, xFLabels } = prevTableau;
     const { indexH, indexT } = prevTableau;
 
     const colH = matrix.getCol(FOverbar, indexH);
@@ -136,13 +154,13 @@ export const updateTableau = (prevTableau) => {
     [BInvB, FOverbar] = swapColumns(BInvB, indexT, FOverbar, indexH);
     [cPrimeBarB, cPrimeBarF] = swapColumns(cPrimeBarB, indexT, cPrimeBarF, indexH);
 
-    [xBLables[indexT], xFLables[indexH]] = [xFLables[indexH], xBLables[indexT]];
+    [xBLabels[indexT], xFLabels[indexH]] = [xFLabels[indexH], xBLabels[indexT]];
 
     return {
         ...prevTableau, 
         ...{
             cBar0, bOverbar, BInvB, FOverbar, cPrimeBarB, cPrimeBarF, 
-            point: getPoint(xBLables, bOverbar), xBLables, xFLables
+            point: getPoint(xBLabels, bOverbar), xBLabels, xFLabels
         }
     }
 }

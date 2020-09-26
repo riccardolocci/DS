@@ -7,7 +7,7 @@ import RandomManager from './RandomManager';
 
 import { Button, Grid, Paper, Table, TableRow, TableHead, TableCell, TableBody } from '@material-ui/core';
 
-import { getY } from '../utils';
+import { formatNumber, getY } from '../utils';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 
@@ -93,6 +93,7 @@ let LPP = () => {
     let [loading, setLoading] = useState(false);
     let [maxX, setMaxX] = useState(30);
     let [message, setMessage] = useState('');
+    let [phase, setPhase] = useState(0);
     let [polygon, setPolygon] = useState([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
     let [stage, setStage] = useState(0);
     let [step, setStep] = useState(0);
@@ -137,7 +138,7 @@ let LPP = () => {
                 let lambda = (x2 + c/a)/(x2 - x1)
                 let y = lambda * y1 + (1 - lambda) * y2;
 
-                return [-c/a, y]
+                return [formatNumber(-c/a), formatNumber(y)]
             }
         } 
         else if(b/a === Infinity){
@@ -146,7 +147,7 @@ let LPP = () => {
                 let lambda = (y2 + c/b)/(y2 - y1)
                 let x = lambda * x1 + (1 - lambda) * x2;
 
-                return [x, -c/b]
+                return [formatNumber(x), formatNumber(-c/b)]
             }
         } 
         else{
@@ -156,19 +157,17 @@ let LPP = () => {
                 let x = lambda * x1 + (1 - lambda) * x2;
                 let y = lambda * y1 + (1 - lambda) * y2;
 
-                return [x, y]
+                return [formatNumber(x), formatNumber(y)]
             }
         }
         
     }
 
-    let formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
-
     let handleHistory = (next = false) => {
         if(next){
             //Create new page only if algorithm has not finished and next page does not exist
-            if(!((history[page] && finished) || history[page+1])){
-                onSimplexAlgorithm();
+            if(!((history[page] && history[page].finished) || history[page+1])){
+                onIntegerSimplexAlgorithm();
             }
             if(history[0]) setPage(page+1);
         }
@@ -230,26 +229,41 @@ let LPP = () => {
             }
         }
 
-        let l_p1 = [-maxX, getY(line, -maxX, maxX)],
-            l_p2 = [maxX, getY(line, maxX, maxX)];
+        const l_p1 =  [
+            b !== 0 ? -maxX : -c/a, 
+            getY(line, -maxX, maxX)
+        ];
+        const l_p2 = [
+            line[1] !== 0 ? maxX : -c/a, 
+            getY(line, maxX, maxX)
+        ];
 
-        if(polygonLeft.length){
+        //THERE IS AN INTERSECTION
+        //If d>0, polygon is in > region
+        //Otherwise in < region
+        //If s and d have same sign, polygon is correct
+        if(polygonRight.length > 0){
+            const barycenter = polygonRight.reduce((prev, curr) => [curr[0] + prev[0], curr[1] + prev[1]], [0,0]).map(n => n/polygonRight.length);
+            
             let d = numbers.matrix.determinant([
-                [l_p1[0], l_p2[0], polygonLeft[0][0]],
-                [l_p1[1], l_p2[1], polygonLeft[0][1]],
+                [l_p1[0], l_p2[0], barycenter[0]],
+                [l_p1[1], l_p2[1], barycenter[1]],
                 [1, 1, 1],
             ]);
 
-            return s*d > 0 ? polygonLeft : polygonRight
-        }
-        else if(polygonRight.length){
-            let d = numbers.matrix.determinant([
-                [l_p1[0], l_p2[0], polygonRight[0][0]],
-                [l_p1[1], l_p2[1], polygonRight[0][1]],
-                [1, 1, 1],
-            ]);
-
+            if(b === 0 && a<0) return s*d < 0 ? polygonRight : polygonLeft
             return s*d > 0 ? polygonRight : polygonLeft
+        }
+        else{
+            const barycenter = polygonLeft.reduce((prev, curr) => [curr[0] + prev[0], curr[1] + prev[1]], [0,0]).map(n => n/polygonLeft.length);
+
+            let d = numbers.matrix.determinant([
+                [l_p1[0], l_p2[0], barycenter[0]],
+                [l_p1[1], l_p2[1], barycenter[1]],
+                [1, 1, 1],
+            ]);
+
+            return s*d >= 0 ? polygonLeft : polygonRight
         }
     }
 
@@ -263,89 +277,115 @@ let LPP = () => {
     let onIntegerSimplexAlgorithm = () => {
         const algorithm = require('../algorithms/cuttingPlane.js')
 
-        // let newPage = null;
-        // if(stage > 0){
-        //     newPage = JSON.parse(JSON.stringify(history[page])); 
-        // }
-
-        do{
-            handleHistory(true);
-        }while(history[page] && !finished);
-
-        console.log('page', page)
-
-        while(!algorithm.optimalityTest(history[page].cBar0)){
-            //FIND GENERATING ROW
-            const indexT = history[page].bOverbar.forEach((el, i) => {
-                if(!algorithm.optimalityTest(el)) return i
-            });
-
-            console.log('indexT', indexT)
-
-            const x1Index = history[page].xBLables.indexOf('x1');
-            const x2Index = history[page].xBLables.indexOf('x2');
-
-            const bOverbarT = history[page].bOverbar[indexT][0];
-            const BInvBT = history[page].BInvB[indexT];
-            const FOverbarT = history[page].FOverbar[indexT];
-            
-            const bOverbarTFloor = Math.floor(bOverbarT);
-            const BInvBTFloor = BInvBT.map(n => Math.floor(n));
-            const FOverbarTFloor = FOverbarT.map(n => Math.floor(n));
-            
-            const newLine = [
-                x1Index > 0 ? BInvBTFloor[x1Index] : FOverbarTFloor[x1Index],
-                x2Index > 0 ? BInvBTFloor[x2Index] : FOverbarTFloor[x2Index],
-                -bOverbarTFloor,
-                -1
-            ]
-
-            onAdd(newLine, polygon);
-
-            //ADDING NEW CONSTRAINT
-            const newSlackIndex = history[page].xBLables.length + history[page].xFLables.length;
-
-            history[page].xBLables.push(`x${newSlackIndex}`);
-            history[page].bOverbar.push([bOverbarTFloor - bOverbarT]);
-            history[page].BInvB.push(...numbers.matrix.subtraction([BInvBTFloor], [BInvBT]));
-
-            //BECAUSE BEFORE THERE WHERE bOverbarT.length BASE ELEMENTS, NOW bOverbarT.length+1
-            history[page].BInvB = history[page].BInvB.map((n,i) => [...n, i === bOverbarT.length ? 1 : 0]);
-
-            history[page].FOverbar.push(...numbers.matrix.subtraction([FOverbarTFloor], [FOverbarT]));
-
-            //DUAL SIMPLEX
-            setStage(2);
-            setStep(0);
-
-            do{
-                handleHistory(true);
-            }while(history[page] && !finished);
+        let newPage = null;
+        if(phase > 0){
+            newPage = JSON.parse(JSON.stringify(history[page])); 
         }
 
-        // switch(newPage){
-        //     case 0:
-        //         //COMPUTE SIMPLEX
-        //         break;
-        //     case 1:
-        //         //CHECK INTEGRALITY
-        //         if(algorithm.optimalityTest(newPage.cBar0)){
+        let bOverbarGen = null, 
+            BInvBGen = null, 
+            FOverbarGen = null, 
+            bOverbarGenFloor = null, 
+            BInvBGenFloor = null, 
+            FOverbarGenFloor = null;
 
-        //         }
-        //         break;
-        //     case 2:
-        //         //FIND CUT
-        //         break;
-        //     case 3:
-        //         //APPLY CUT
-        //         break;
-        //     case 4:
-        //         //FIND NEW X* BY DUAL SYMPLEX
-        //         //REPEAT FROM 1
-        //         break;
-        //     default:
-        //         break;
-        // }
+        if([2,3].includes(phase)){
+            bOverbarGen = newPage.bOverbar[newPage.genRowIndex][0];
+            BInvBGen = newPage.BInvB[newPage.genRowIndex];
+            FOverbarGen = newPage.FOverbar[newPage.genRowIndex];
+            
+            bOverbarGenFloor = Math.floor(bOverbarGen);
+            BInvBGenFloor = BInvBGen.map(n => Math.floor(n));
+            FOverbarGenFloor = FOverbarGen.map(n => Math.floor(n));
+        }
+
+        switch(phase){
+            case 0:
+                //COMPUTE SIMPLEX
+                onSimplexAlgorithm();
+
+                if(finished){
+                    setFinished(false);
+                    setPhase(1);
+                }
+                break;
+            case 1:
+                //CHECK INTEGRALITY
+                newPage.genRowIndex = algorithm.optimalityTest(newPage.bOverbar);
+
+                if(newPage.genRowIndex < 0 || newPage.genRowIndex===null){
+                    setPhase(5);
+                    newPage.finished = true;
+
+                    if(newPage.genRowIndex===null) newPage.infeasible = true;
+                }
+                else setPhase(2);
+                break;
+            case 2:
+                
+                const newLine = algorithm.computeSlackOrLine(
+                    newPage.slacks, 
+                    -bOverbarGenFloor, 
+                    BInvBGenFloor, 
+                    newPage.xBLabels, 
+                    FOverbarGenFloor, 
+                    newPage.xFLabels,
+                    'line'
+                );
+
+                newPage.lines.push(newLine);
+                newPage.polygon = onAdd(newLine, newPage.polygon);
+                setPhase(3);
+                break;
+            case 3:
+                //APPLY CUT
+                const newSlackIndex = newPage.xBLabels.length + newPage.xFLabels.length + 1;
+
+                const xBLabelsOld = [...newPage.xBLabels];
+
+                const bOverbarRim = [bOverbarGenFloor - bOverbarGen];
+                const BInvBRim = numbers.matrix.subtraction([BInvBGenFloor], [BInvBGen]);
+                const FOverbarRim = numbers.matrix.subtraction([FOverbarGenFloor], [FOverbarGen]);
+
+                newPage.xBLabels.push(`x${newSlackIndex}`);
+                newPage.cPrimeBarB[0].push(0);
+                newPage.bOverbar.push(bOverbarRim);
+                newPage.BInvB.push(...BInvBRim);
+
+                //BECAUSE BEFORE THERE WHERE bOverbarGen.length BASE ELEMENTS, NOW bOverbarGen.length+1
+                newPage.BInvB = newPage.BInvB.map((n,i) => [...n, i === newPage.bOverbar.length - 1 ? 1 : 0]);
+
+                newPage.FOverbar.push(...FOverbarRim);
+
+                newPage.slacks[`x${newSlackIndex}`] = algorithm.computeSlackOrLine(
+                    newPage.slacks, 
+                    bOverbarRim[0], 
+                    BInvBRim[0], 
+                    xBLabelsOld, 
+                    FOverbarRim[0], 
+                    newPage.xFLabels,
+                    'slack'
+                );
+
+                setStage(2);
+                setStep(0);
+                setPhase(4);
+                break;
+            case 4:
+                //FIND NEW X* BY DUAL SYMPLEX
+                //REPEAT FROM 1
+                onSimplexAlgorithm(true);
+
+                if(finished){
+                    setFinished(false);
+                    setPhase(1);
+                }
+                break;
+            default:
+                break;
+        }
+
+        if(phase > 0 && phase < 4) setHistory([...history, newPage]);
     }
 
     let onSimplexAlgorithm = () => {
@@ -355,12 +395,12 @@ let LPP = () => {
 
         let newPage = null;
         if(stage > 0){
-            newPage = JSON.parse(JSON.stringify(history[page])); 
+            newPage = JSON.parse(JSON.stringify(history[page]));
         }
         
         switch(stage){
             case 0:
-                const initValues = algorithm.init(A, b, cPrime);
+                const initValues = {polygon, lines, ...algorithm.init(A, b, cPrime)};
 
                 setHistory([initValues]);
                 setStage(stage+1);
@@ -371,7 +411,7 @@ let LPP = () => {
                     case 0:
                         newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
 
-                        if(!Number.isInteger(newPage.indexH)) {
+                        if(isNaN(newPage.indexH)) {
                             if(page === 0){
                                 let bOverbarIndexes = [];
                                 newPage.bOverbar.forEach((el,i) => {if(-el[0] < 0) bOverbarIndexes.push(i)});
@@ -389,6 +429,12 @@ let LPP = () => {
                                     multiplyByMinusOne.forEach( idx => {
                                         newPage.bOverbar[idx][0] *= -1;
                                         newPage.FOverbar = numbers.matrix.rowScale(newPage.FOverbar, idx, -1);
+
+                                        const slack = newPage.xBLabels[idx];
+                                        newPage.slacks[slack] = [
+                                            ...newPage.FOverbar[idx].map(n => -n),
+                                            newPage.bOverbar[idx][0]
+                                        ]
                                     });
 
                                     setStage(2);
@@ -396,14 +442,12 @@ let LPP = () => {
                                 }
                                 else{
                                     // NOT ADMISSIBLE FOR DUAL SIMPLEX
-                                    // setFinished(true);
-                                    setFinished(true);;
+                                    setFinished(true);
                                 }
                             }
                             else{
                                 // NOT ADMISSIBLE FOR DUAL SIMPLEX
-                                // setFinished(true);
-                                setFinished(true);;
+                                setFinished(true);
                             }
                         }
                         else setStep(1);
@@ -444,10 +488,17 @@ let LPP = () => {
                         break;
 
                     case 1:
-                        const pivot = algorithm.dualFindPivot(newPage.cPrimeBarF, newPage.FOverbar, newPage.indexT);
-                        newPage = {...newPage, ...pivot};
+                        const pivot = algorithm.dualFindPivot(newPage.cPrimeBarF, newPage.FOverbar, newPage.indexT, newPage.xFLabels);
 
-                        setStep(2);
+                        if(pivot.indexH === null){
+                            setFinished(true);
+                            newPage.infeasible = true;
+                        }
+                        else{
+                            setStep(2);
+                        }
+
+                        newPage = {...newPage, ...pivot};
                         setHistory([...history, newPage]);
 
                         break;
@@ -503,19 +554,19 @@ let LPP = () => {
                 <Grid container direction='row' item xs={6}>
                     <Grid item xs={12}>
                         <PlotGraph 
-                            lines={lines}
+                            lines={page > 0 ? history[page].lines : lines}
                             level={zoomLevel}
                             maxX={maxX}
-                            polygon={polygon}
-                            point={page>0 ? history[page].point : null}
+                            polygon={page > 0 ? history[page].polygon : polygon}
+                            point={page > 0 ? history[page].point : null}
                         />
                     </Grid>
                     <Grid item xs={12}>
                         <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
                         <Button variant='outlined' onClick={onClear}>CLEAR</Button>
                         <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
-                        <Button variant='outlined' disabled={!history[page+1] && history[page] && finished} onClick={() => handleHistory(true)}>{">"}</Button>
-                        <Button variant='outlined' onClick={() => onIntegerSimplexAlgorithm()}>CUTTING PLANE</Button>
+                        <Button variant='outlined' disabled={!history[page+1] && history[page] && history[page].finished} onClick={() => handleHistory(true)}>{">"}</Button>
+                        {/* <Button variant='outlined' onClick={() => onIntegerSimplexAlgorithm()}>CUTTING PLANE</Button> */}
                         {page}
                     </Grid>
                 </Grid>
@@ -525,31 +576,31 @@ let LPP = () => {
                             <TableRow>
                                 <TableCell key="head-empty-1"></TableCell>
                                 <TableCell key="head-empty-2"></TableCell>
-                                {history[page].xBLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
-                                {history[page].xFLables.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
+                                {history[page].xBLabels.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
+                                {history[page].xFLabels.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             <TableRow>
                                 <TableCell key='-z'>-z</TableCell>
-                                <TableCell key='cBar0'>{history[page].cBar0}</TableCell>
+                                <TableCell key='cBar0'>{formatNumber(history[page].cBar0)}</TableCell>
                                 {history[page].cPrimeBarB[0].map((n, i) => (<TableCell key={`cPrimeBarB${i}`}>{formatNumber(n)}</TableCell>))}
                                 {history[page].cPrimeBarF[0].map((n, i) => (<TableCell key={`cPrimeBarF${i}`}>{formatNumber(n)}</TableCell>))}
                             </TableRow>
-                            {history[page].xBLables.map((n,i) => (
+                            {history[page].xBLabels.map((n,i) => (
                                 <TableRow key={`baseValuesRow${i}`}>
                                     <TableCell key={`baseValues${n}`}>{n}</TableCell>
                                     <TableCell key={`bOverbar${i}`}>{formatNumber(history[page].bOverbar[i][0])}</TableCell>
-                                    {history[page].BInvB[i].map(n => (<TableCell key={`BInvB${i},${n}`}>{formatNumber(n)}</TableCell>))}
-                                    {history[page].FOverbar[i].map((n,j) => (
+                                    {history[page].BInvB[i].map((n1, j) => (<TableCell key={`BInvB${j}_${i},${n1}`}>{formatNumber(n1)}</TableCell>))}
+                                    {history[page].FOverbar[i].map((n1, j) => (
                                         <TableCell 
                                             className={
                                                 history[page].showPivot && 
                                                 history[page].indexT===i && history[page].indexH===j ? classes.pivot : ''
                                             } 
-                                            key={`FOverbar${j}_${i},${n}`}
+                                            key={`FOverbar${j}_${i},${n1}`}
                                         >
-                                            {formatNumber(n)}
+                                            {formatNumber(n1)}
                                         </TableCell>
                                     ))}
                                 </TableRow>
