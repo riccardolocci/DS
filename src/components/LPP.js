@@ -138,7 +138,7 @@ let LPP = () => {
                 let lambda = (x2 + c/a)/(x2 - x1)
                 let y = lambda * y1 + (1 - lambda) * y2;
 
-                return [-c/a, y]
+                return [formatNumber(-c/a), formatNumber(y)]
             }
         } 
         else if(b/a === Infinity){
@@ -147,7 +147,7 @@ let LPP = () => {
                 let lambda = (y2 + c/b)/(y2 - y1)
                 let x = lambda * x1 + (1 - lambda) * x2;
 
-                return [x, -c/b]
+                return [formatNumber(x), formatNumber(-c/b)]
             }
         } 
         else{
@@ -157,7 +157,7 @@ let LPP = () => {
                 let x = lambda * x1 + (1 - lambda) * x2;
                 let y = lambda * y1 + (1 - lambda) * y2;
 
-                return [x, y]
+                return [formatNumber(x), formatNumber(y)]
             }
         }
         
@@ -208,8 +208,6 @@ let LPP = () => {
 
             let intersection = findIntersection(line, [p1, p2]);
 
-            console.log('intersection', intersection)
-
             if(intersection){
                 if(intersections.length === 1){
                     currentPolygon.push(p1);
@@ -231,7 +229,6 @@ let LPP = () => {
             }
         }
 
-        
         const l_p1 =  [
             b !== 0 ? -maxX : -c/a, 
             getY(line, -maxX, maxX)
@@ -241,63 +238,28 @@ let LPP = () => {
             getY(line, maxX, maxX)
         ];
 
-        console.log('polygonLeft', polygonLeft)
-        console.log('polygonRight', polygonRight)
-
-        let signAdjust = 1
-        if(a===0 || b===0) signAdjust = Math.sign(a+b);
-
-        console.log('signAdjust', signAdjust)
-
-        // if(polygonLeft.length){
-        //     let d = numbers.matrix.determinant([
-        //         [l_p1[0], l_p2[0], polygonLeft[0][0]],
-        //         [l_p1[1], l_p2[1], polygonLeft[0][1]],
-        //         [1, 1, 1],
-        //     ]);
-
-        //     console.log('Matrix', [
-        //         [l_p1[0], l_p2[0], polygonLeft[0][0]],
-        //         [l_p1[1], l_p2[1], polygonLeft[0][1]],
-        //         [1, 1, 1],
-        //     ]);
-        //     console.log('s', s)
-        //     console.log('d', d)
-        //     console.log('polygonLeft s*d', s*d)
-        //     return signAdjust*s*d >= 0 ? polygonLeft : polygonRight
-        // }
-        // else if(polygonRight.length){
-        //     let d = numbers.matrix.determinant([
-        //         [l_p1[0], l_p2[0], polygonRight[0][0]],
-        //         [l_p1[1], l_p2[1], polygonRight[0][1]],
-        //         [1, 1, 1],
-        //     ]);
-
-        //     console.log('polygonRight s*d', s*d)
-        //     return signAdjust*s*d >= 0 ? polygonRight : polygonLeft
-        // }
-
         //THERE IS AN INTERSECTION
         //If d>0, polygon is in > region
         //Otherwise in < region
         //If s and d have same sign, polygon is correct
         if(polygonRight.length > 0){
-            console.log('A?')
+            const barycenter = polygonRight.reduce((prev, curr) => [curr[0] + prev[0], curr[1] + prev[1]], [0,0]).map(n => n/polygonRight.length);
+            
             let d = numbers.matrix.determinant([
-                [l_p1[0], l_p2[0], polygonRight[0][0]],
-                [l_p1[1], l_p2[1], polygonRight[0][1]],
+                [l_p1[0], l_p2[0], barycenter[0]],
+                [l_p1[1], l_p2[1], barycenter[1]],
                 [1, 1, 1],
             ]);
 
-            if(a===0) return s*d < 0 ? polygonRight : polygonLeft
-            if(b === 0 && a<0) return s*d > 0 ? polygonRight : polygonLeft
-            return s*d >= 0 ? polygonRight : polygonLeft
+            if(b === 0 && a<0) return s*d < 0 ? polygonRight : polygonLeft
+            return s*d > 0 ? polygonRight : polygonLeft
         }
         else{
-            console.log('B?')
+            const barycenter = polygonLeft.reduce((prev, curr) => [curr[0] + prev[0], curr[1] + prev[1]], [0,0]).map(n => n/polygonLeft.length);
+
             let d = numbers.matrix.determinant([
-                [l_p1[0], l_p2[0], polygonLeft[0][0]],
-                [l_p1[1], l_p2[1], polygonLeft[0][1]],
+                [l_p1[0], l_p2[0], barycenter[0]],
+                [l_p1[1], l_p2[1], barycenter[1]],
                 [1, 1, 1],
             ]);
 
@@ -351,8 +313,6 @@ let LPP = () => {
                 //CHECK INTEGRALITY
                 newPage.genRowIndex = algorithm.optimalityTest(newPage.bOverbar);
 
-                console.log('newPage.genRowIndex', newPage.genRowIndex);
-
                 if(newPage.genRowIndex < 0 || newPage.genRowIndex===null){
                     setPhase(5);
                     newPage.finished = true;
@@ -362,8 +322,6 @@ let LPP = () => {
                 else setPhase(2);
                 break;
             case 2:
-                // console.log('BInvBGenFloor', BInvBGenFloor)
-                // console.log('FOverbarGenFloor', FOverbarGenFloor)
                 
                 const newLine = algorithm.computeSlackOrLine(
                     newPage.slacks, 
@@ -376,8 +334,6 @@ let LPP = () => {
                 );
 
                 newPage.lines.push(newLine);
-                console.log('newLine', newLine);
-                console.log('newPage.lines', newPage.lines)
                 newPage.polygon = onAdd(newLine, newPage.polygon);
                 setPhase(3);
                 break;
@@ -410,8 +366,6 @@ let LPP = () => {
                     newPage.xFLabels,
                     'slack'
                 );
-
-                console.log(`x${newSlackIndex}`, newPage.slacks[`x${newSlackIndex}`]);
 
                 setStage(2);
                 setStep(0);
