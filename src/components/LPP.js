@@ -88,6 +88,7 @@ const DEBUG=false
 const PASS=50
 
 let LPP = () => {
+    let [feasibleRegion, setFeasibleRegion] = useState([]);
     let [file, setFile] = useState();
     let [lines, setLines] = useState([]);
     let [loading, setLoading] = useState(false);
@@ -124,8 +125,63 @@ let LPP = () => {
         setLines(startLines);
         setPolygon(startPolygon);
 
+        let boundingBox = findBoundingBox(startPolygon);
+
+        let startFeasibleRegion = findIntegerFeasibleRegion(boundingBox, startPolygon);
+        setFeasibleRegion(startFeasibleRegion);
+
         let maxxxX = startPolygon.reduce((acc, curr) =>  Math.max(acc, ...curr), 0) * 2;
         setMaxX(maxxxX);
+    }
+    
+    let findBoundingBox = (polygon) => {
+        let polygonMaxX = null,
+            polygonMaxY = null,
+            polygonMinX = null,
+            polygonMinY = null;
+
+        if(!polygon.length) return null;
+        
+        polygon.forEach(el => {
+            const [x, y] = el.map(n => Math.floor(n));
+
+            polygonMaxX = polygonMaxX === null || x > polygonMaxX ? x : polygonMaxX;
+            polygonMaxY = polygonMaxY === null || y > polygonMaxY ? y : polygonMaxY;
+            polygonMinX = polygonMinX === null || x < polygonMinX ? x : polygonMinX;
+            polygonMinY = polygonMinY === null || y < polygonMinY ? y : polygonMinY;
+        })
+
+        return { polygonMaxX, polygonMaxY, polygonMinX, polygonMinY };
+    }
+
+    let findIntegerFeasibleRegion = (boundingBox, polygon) => {
+        if(!boundingBox) return [];
+
+        const { polygonMaxX, polygonMaxY, polygonMinX, polygonMinY } = boundingBox;
+
+        let feasibleRegion = [];
+
+        for(let i=polygonMinX; i<=polygonMaxX; i++){
+            for(let j=polygonMinY; j<=polygonMaxY; j++){
+
+                if(polygon.every((el, k) => {
+                    const l_p1 = el;
+                    const l_p2 = k === (polygon.length-1) ? polygon[0] : polygon[k+1];
+
+                    const d = numbers.matrix.determinant([
+                        [l_p1[0], l_p2[0], i],
+                        [l_p1[1], l_p2[1], j],
+                        [1, 1, 1],
+                    ]);
+
+                    return d >= 0;
+                })){
+                    feasibleRegion.push([i,j]);
+                }
+            }
+        }
+
+        return feasibleRegion;
     }
 
     let findIntersection = (line, segment) => {
@@ -335,6 +391,7 @@ let LPP = () => {
 
                 newPage.lines.push(newLine);
                 newPage.polygon = onAdd(newLine, newPage.polygon);
+                newPage.feasibleRegion = findIntegerFeasibleRegion(findBoundingBox(newPage.polygon), newPage.polygon);
                 setPhase(3);
                 break;
             case 3:
@@ -400,7 +457,7 @@ let LPP = () => {
         
         switch(stage){
             case 0:
-                const initValues = {polygon, lines, ...algorithm.init(A, b, cPrime)};
+                const initValues = {feasibleRegion, polygon, lines, ...algorithm.init(A, b, cPrime)};
 
                 setHistory([initValues]);
                 setStage(stage+1);
@@ -551,9 +608,10 @@ let LPP = () => {
                 </div>
             </>}
             {file && <Grid container direction='row'>
-                <Grid container direction='row' item xs={6}>
+                <Grid container direction='row' item xs={4}>
                     <Grid item xs={12}>
                         <PlotGraph 
+                            feasibleRegion={page > 0 ? history[page].feasibleRegion : feasibleRegion}
                             lines={page > 0 ? history[page].lines : lines}
                             level={zoomLevel}
                             maxX={maxX}
@@ -570,7 +628,7 @@ let LPP = () => {
                         {page}
                     </Grid>
                 </Grid>
-                <Grid container direction='column' item xs={6}>
+                <Grid container direction='column' item xs={8}>
                     {page>0 && <Table>
                         <TableHead>
                             <TableRow>
