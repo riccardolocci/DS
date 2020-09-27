@@ -102,6 +102,9 @@ let PlotGraph = (props) => {
   
   return (
     <Plot
+      style={{
+        height: "50vh"
+      }}
       data = {data}
       layout = {{
         hovermode: 'closest',
@@ -109,6 +112,8 @@ let PlotGraph = (props) => {
         title: title,
         xaxis: {
           range: [-maxX/10, maxX],
+          scaleanchor: "y", 
+          scaleratio: 1
           // fixedrange: true
         },
         yaxis: {
@@ -117,7 +122,7 @@ let PlotGraph = (props) => {
         },
         // width: 1000,
         // height: 500,
-        // responsive: true,
+        responsive: true,
       }}
     />
   );
