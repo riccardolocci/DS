@@ -1,4 +1,7 @@
 import React from 'react';
+
+import { Typography } from '@material-ui/core';
+
 import Latex from 'react-latex';
 
 let OriginalProblem = (props) => {
@@ -49,7 +52,12 @@ let OriginalProblem = (props) => {
     const text = `$$\\begin{cases} \\min ${objectiveFunctionString} \\\\ ${constraintsString} \\end{cases}$$`;
 
     return (
-        <Latex>{text}</Latex>
+        <>
+            <Typography align="left" display="block" variant="h6">Formal problem</Typography>
+            <div style={{margin: '20px 0px'}}>
+                <Latex>{text}</Latex>
+            </div>
+        </>
     );
 }
 

@@ -3,6 +3,7 @@ import PlotGraph from './PlotGraph';
 
 import Dropzone from './Dropzone';
 import ExamplesManager from './ExamplesManager';
+import InfoBox from './InfoBox';
 import OriginalProblem from './OriginalProblem';
 import RandomManager from './RandomManager';
 import Tableau from './Tableau';
@@ -51,6 +52,9 @@ const useStyles = makeStyles((theme) => createStyles({
         margin: 'auto',
         whiteSpace: 'nowrap'
     },
+    grid: {
+        padding: 12
+    },
     loading: {
         width: 50,
         float: 'right',
@@ -82,8 +86,7 @@ const useStyles = makeStyles((theme) => createStyles({
     }
 }));
 
-const DEBUG=false
-const SPACING = 3;
+const DEBUG=false;
 
 let LPP = () => {
     let [feasibleRegion, setFeasibleRegion] = useState([]);
@@ -225,7 +228,7 @@ let LPP = () => {
             if(history[0]) setPage(page+1);
         }
         else{
-            if(page > 0) setPage(page-1)
+            if(history[page]) setPage(page-1)
         }
     }
 
@@ -464,7 +467,7 @@ let LPP = () => {
         
         switch(stage){
             case 0:
-                const initValues = {feasibleRegion, polygon, lines, ...algorithm.init(A, b, cPrime)};
+                const initValues = {feasibleRegion, info: ['Initializing tableau'], lines, polygon, ...algorithm.init(A, b, cPrime)};
 
                 setHistory([initValues]);
                 setStage(stage+1);
@@ -474,14 +477,20 @@ let LPP = () => {
                 switch(step){
                     case 0:
                         newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
+                        newPage.info = ['Checking optimality...']
 
                         if(isNaN(newPage.indexH)) {
+                            newPage.info.push('Found no valid cadidate to enter base');
+
                             if(page === 0){
                                 let bOverbarIndexes = [];
                                 newPage.bOverbar.forEach((el,i) => {if(-el[0] < 0) bOverbarIndexes.push(i)});
 
+                                newPage.info.push('Checking if problem can be solved with dual simplex');
                                 if(bOverbarIndexes.length > 0){
                                     // ADMISSIBLE FOR DUAL SIMPLEX
+                                    newPage.info.push('Problem satisfies dual simplex feasibility rules');
+
                                     let nonZeroElements = {}
                                     bOverbarIndexes.forEach( idx => {
                                         const count = newPage.FOverbar[idx].filter(n => n>0).length;
@@ -501,28 +510,44 @@ let LPP = () => {
                                         ]
                                     });
 
+                                    newPage.info.push(`Multiplying row(s) ${multiplyByMinusOne.map(n => n+1).join(', ')} by -1`);
+
                                     setStage(2);
                                     setStep(0);
                                 }
                                 else{
                                     // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                    newPage.info.push('Problem does not satisfy dual simplex feasibility rules');
                                     setFinished(true);
                                 }
                             }
                             else{
                                 // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                newPage.info.push('Found optimal solution');
                                 setFinished(true);
                             }
                         }
-                        else setStep(1);
+                        else {
+                            newPage.info.push(`Solution can be improved`);
+                            newPage.info.push(`Found candidate at column ${newPage.indexH+1} of out of base variables`);
+                            newPage.info.push(`Variable ${newPage.xFLabels[newPage.indexH]} will enter the base`);
+                            newPage.showIndexH = true;
+                            setStep(1);
+                        }
 
                         setHistory([...history, newPage]);
 
                         break;
 
                     case 1:
+                        newPage.info.push(`Looking for a valid candidate to leave base`);
                         const pivot = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
                         newPage = {...newPage, ...pivot};
+                        
+                        newPage.info = [`Found candidate at row ${newPage.indexT+1}`];
+                        newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
+                        newPage.info.push(`Found pivot at column ${newPage.indexH+1} of out of base variables, and row  ${newPage.indexT+1}`);
+                        newPage.info.push(`Pivot value is ${newPage.FOverbar[newPage.indexT][newPage.indexH]}`);
 
                         setStep(2);
                         setHistory([...history, newPage]);
@@ -531,6 +556,7 @@ let LPP = () => {
 
                     case 2:
                         newPage = algorithm.updateTableau(newPage);
+                        newPage.info = [`Apply pivoting and updating tableau`];
 
                         setStep(0);
                         setHistory([...history, newPage]);
@@ -614,16 +640,16 @@ let LPP = () => {
                     </Paper>
                 </div>
             </>}
-            {file && <Grid container direction='column' spacing={SPACING}>
-                <Grid container direction='row' item xs={12} spacing={SPACING}>
-                    <Grid container direction='row' item xs={5} spacing={SPACING}>
+            {file && <Grid container direction='column' className={classes.grid}>
+                <Grid container direction='row' item xs={12} className={classes.grid}>
+                    <Grid container direction='row' item xs={5} className={classes.grid}>
                         <Grid item xs={12}>
                             <PlotGraph 
-                                feasibleRegion={page > 0 ? history[page].feasibleRegion : feasibleRegion}
-                                lines={page > 0 ? history[page].lines : lines}
+                                feasibleRegion={history[page] ? history[page].feasibleRegion : feasibleRegion}
+                                lines={history[page] ? history[page].lines : lines}
                                 maxX={maxX}
-                                polygon={page > 0 ? history[page].polygon : polygon}
-                                point={page > 0 ? history[page].point : null}
+                                polygon={history[page] ? history[page].polygon : polygon}
+                                point={history[page] ? history[page].point : null}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -633,17 +659,16 @@ let LPP = () => {
                             {history[page] && page}
                         </Grid>
                     </Grid>
-                    <Grid item xs={7}>
-                        {page>0 && <Tableau 
-                            page={history[page]}
-                        />}
+                    <Grid item xs={7} className={classes.grid}>
+                        <Tableau page={history[page] ? history[page] : {}} />
                     </Grid>
                 </Grid>
-                <Grid container direction='row' item xs={12} spacing={SPACING}>
-                    <Grid item xs={4}>
+                <Grid container direction='row' item xs={12} className={classes.grid}>
+                    <Grid item xs={5} className={classes.grid}>
                         <OriginalProblem problem={file} />
                     </Grid>
-                    <Grid item xs={8}>
+                    <Grid item xs={7} className={classes.grid}>
+                        <InfoBox info={history[page] ? history[page].info : []}/>
                     </Grid>
                 </Grid>
             </Grid>}
