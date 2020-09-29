@@ -1,6 +1,8 @@
 import React from 'react';
 
-import { getY } from '../utils';
+import { Typography } from '@material-ui/core';
+
+import { getX, getY } from '../utils';
 
 import Plotly from 'plotly.js';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -9,50 +11,125 @@ const Plot = createPlotlyComponent(Plotly);
 let getPolygonPath = (perimeter) => perimeter.length ? `M${perimeter.reduce((acc, n) => `${acc}L${n.join(',')}`)}Z` : '';
 
 let PlotGraph = (props) => {
-  var lines = []
+  var drawLines = []
 
-  const maxX = props.maxX
+  const { feasibleRegion, lines, maxX, point, polygon, title } = props;
 
-  if(props.lines) lines = props.lines.map( n => ({
+  if(lines) drawLines = lines.map( n => {
+    let commonLine = {
       type: 'line',
-      x0: -maxX, y0: getY(n, -maxX),
-      x1: maxX, y1: getY(n, maxX),
       line: {
         color: 'rgb(200, 0, 0)',
-        width: 4,
+        width: 1,
         dash: 'dot'
       }
-    }));
+    }
 
-  let shapes = [...lines]
+    if(n[0] === 0) {
+      const y = getY(n, maxX);
+      const x = getX(n, y);
+
+      return {
+        ...commonLine,
+        x0: -x, y0: y,
+        x1: x, y1: y
+      }
+    }
+
+    if(n[1] === 0) {
+      const x = getX(n, maxX);
+      const y = getY(n, x);
+
+      return {
+        ...commonLine,
+        x0: x, y0: -y,
+        x1: x, y1: y
+      }
+    }
+    
+    return {
+      ...commonLine,
+      x0: -maxX, y0: getY(n, -maxX),
+      x1: maxX, y1: getY(n, maxX)
+    }
+  });
+
+
+  let shapes = [...drawLines]
   
-  let polygonPath = getPolygonPath(props.polygon)
+  let polygonPath = getPolygonPath(polygon)
   if(polygonPath) shapes.push({
     type: 'path',
     path: polygonPath,
-    fillcolor: 'rgba(0, 0, 184, 0.5)',
+    fillcolor: 'rgba(0, 0, 184, 0.2)',
     line: {
-      color: 'rgb(0, 0, 184)'
+      color: 'rgb(0, 0, 184)',
+      width: 1,
     }
   })
   
+  let feasibleRegionXs = [];
+  let feasibleRegionYs = [];
+  feasibleRegion.forEach(el => {
+    feasibleRegionXs.push(el[0]);
+    feasibleRegionYs.push(el[1]);
+  });
+
+  if(!feasibleRegion.length){
+    feasibleRegionXs = [null];
+    feasibleRegionYs = [null];
+  }
+
+  const data = [{
+    marker: {
+      color: 'blue',
+      size: 3
+    },
+    mode: 'markers',
+    name: 'feasible solutions',
+    type: 'scatter',
+    x: feasibleRegionXs,
+    y: feasibleRegionYs
+  }, {
+    marker: {
+      color: 'green',
+      size: 5
+    },
+    mode: 'markers',
+    name: 'current solution',
+    type: 'scatter',
+    x: [point ? point[0] : null],
+    y: [point ? point[1] : null]
+  }];
+  
   return (
-    <Plot
-      layout={ {
-        title: 'Basic Polygon Cut',
-        xaxis: {
-          range: [-10, maxX],
-          fixedrange: true
-        },
-        yaxis: {
-          range: [-10, maxX],
-          fixedrange: true
-        },
-        width: 1000,
-        height: 1000,
-        shapes: shapes
-      } }
-    />
+    <>
+      <Typography align="left" display="block" variant="h6">Geometric representation</Typography>
+      <Plot
+        style={{
+          height: "50vh"
+        }}
+        data = {data}
+        layout = {{
+          hovermode: 'closest',
+          shapes: shapes,
+          title: title,
+          xaxis: {
+            range: [-maxX/10, maxX],
+            scaleanchor: "y", 
+            scaleratio: 1
+            // fixedrange: true
+          },
+          yaxis: {
+            range: [-maxX/10, maxX],
+            // fixedrange: true
+          },
+          // width: 1000,
+          // height: 500,
+          responsive: true,
+        }}
+      />
+    </>
   );
 }
 
