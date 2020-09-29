@@ -22,7 +22,7 @@ let ExamplesManager = (props) => {
     
     return (
         <>
-            Alternatively, try one of the following examples:
+            {/*Alternatively, t*/}Try one of the following examples:
             
             <br/>
             

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import PlotGraph from './PlotGraph';
 
-import Dropzone from './Dropzone';
+// import Dropzone from './Dropzone';
 import ExamplesManager from './ExamplesManager';
 import InfoBox from './InfoBox';
 import OriginalProblem from './OriginalProblem';
-import RandomManager from './RandomManager';
+// import RandomManager from './RandomManager';
 import Tableau from './Tableau';
 
 import { Button, Grid, Paper } from '@material-ui/core';
@@ -344,7 +344,7 @@ let LPP = () => {
         const algorithm = require('../algorithms/cuttingPlane.js')
 
         let newPage = null;
-        if(phase > 0){
+        if(phase > 0 && phase < 4){
             newPage = JSON.parse(JSON.stringify(history[page])); 
         }
 
@@ -368,12 +368,18 @@ let LPP = () => {
         switch(phase){
             case 0:
                 //COMPUTE SIMPLEX
-                onSimplexAlgorithm();
-
                 if(finished){
+                    newPage = JSON.parse(JSON.stringify(history[page])); 
+                    newPage.info = [`Simplex algorithm finished`, `Checking integrality of the solution`];
+                    setHistory([...history, newPage]);
                     setFinished(false);
                     setPhase(1);
                 }
+                else {
+                    //COMPUTE SIMPLEX
+                    onSimplexAlgorithm();
+                }
+
                 break;
             case 1:
                 //CHECK INTEGRALITY
@@ -382,13 +388,24 @@ let LPP = () => {
                 if(newPage.genRowIndex < 0 || newPage.genRowIndex===null){
                     setPhase(5);
                     newPage.finished = true;
+                    newPage.info = ['The solution satisfies integrality'];
 
-                    if(newPage.genRowIndex===null) newPage.infeasible = true;
+                    if(newPage.genRowIndex===null){
+                        newPage.infeasible = true;
+                        newPage.info.push('But it is infeasible');
+                    }
+                    else{
+                        newPage.info.push('Optimal integer solution found');
+                    }
                 }
-                else setPhase(2);
+                else {
+                    setPhase(2);
+                    newPage.info = ['The solution does not satisfy integrality'];
+                    newPage.info.push('Applying cutting plane');
+                }
                 break;
             case 2:
-                
+                newPage.info = ['Computing new constraint', 'Applying cut'];
                 const newLine = algorithm.computeSlackOrLine(
                     newPage.slacks, 
                     -bOverbarGenFloor, 
@@ -418,6 +435,8 @@ let LPP = () => {
                 newPage.cPrimeBarB[0].push(0);
                 newPage.bOverbar.push(bOverbarRim);
                 newPage.BInvB.push(...BInvBRim);
+                
+                newPage.info = ['Adding rim to tableau'];
 
                 //BECAUSE BEFORE THERE WHERE bOverbarGen.length BASE ELEMENTS, NOW bOverbarGen.length+1
                 newPage.BInvB = newPage.BInvB.map((n,i) => [...n, i === newPage.bOverbar.length - 1 ? 1 : 0]);
@@ -434,19 +453,26 @@ let LPP = () => {
                     'slack'
                 );
 
+                newPage.info.push(`Computing new slack x${newSlackIndex} as function of original variables`);
+
                 setStage(2);
                 setStep(0);
                 setPhase(4);
                 break;
             case 4:
-                //FIND NEW X* BY DUAL SYMPLEX
-                //REPEAT FROM 1
-                onSimplexAlgorithm(true);
-
                 if(finished){
+                    newPage = JSON.parse(JSON.stringify(history[page])); 
+                    newPage.info = [`Dual simplex algorithm finished`, `Checking integrality of the solution`];
+                    setHistory([...history, newPage]);
                     setFinished(false);
                     setPhase(1);
                 }
+                else{
+                    //FIND NEW X* BY DUAL SYMPLEX
+                    //REPEAT FROM 1
+                    onSimplexAlgorithm(true);
+                }
+
                 break;
             default:
                 break;
@@ -467,7 +493,7 @@ let LPP = () => {
         
         switch(stage){
             case 0:
-                const initValues = {feasibleRegion, info: ['Initializing tableau'], lines, polygon, ...algorithm.init(A, b, cPrime)};
+                const initValues = {feasibleRegion, info: ['Applying simplex algorithm', 'Initializing tableau'], lines, polygon, ...algorithm.init(A, b, cPrime)};
 
                 setHistory([initValues]);
                 setStage(stage+1);
@@ -540,11 +566,11 @@ let LPP = () => {
                         break;
 
                     case 1:
-                        newPage.info.push(`Looking for a valid candidate to leave base`);
+                        newPage.info = [`Looking for a valid candidate to leave base`];
                         const pivot = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
                         newPage = {...newPage, ...pivot};
                         
-                        newPage.info = [`Found candidate at row ${newPage.indexT+1}`];
+                        newPage.info.push(`Found candidate at row ${newPage.indexT+1}`);
                         newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
                         newPage.info.push(`Found pivot at column ${newPage.indexH+1} of out of base variables, and row  ${newPage.indexT+1}`);
                         newPage.info.push(`Pivot value is ${newPage.FOverbar[newPage.indexT][newPage.indexH]}`);
@@ -561,6 +587,7 @@ let LPP = () => {
                         setStep(0);
                         setHistory([...history, newPage]);
                         break;
+
                     default:
                         break;
                 }
@@ -568,24 +595,41 @@ let LPP = () => {
             case 2:
                 switch(step){
                     case 0:
+                        newPage.info = ['Applying dual simplex', 'Checking dual optimality...']
                         newPage.indexT = algorithm.dualOptimalityTest(newPage.bOverbar);
 
-                        if(!Number.isInteger(newPage.indexT)) setFinished(true);
-                        else setStep(1);
+                        if(!Number.isInteger(newPage.indexT)) {
+                            newPage.info.push('Found optimal solution');
+                            setFinished(true);
+                        }
+                        else {
+                            newPage.info.push(`Solution can be improved`);
+                            newPage.info.push(`Found candidate at row ${newPage.indexT+1}`);
+                            newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
+                            newPage.showIndexT = true;
+                            setStep(1);
+                        }
 
                         setHistory([...history, newPage]);
 
                         break;
 
                     case 1:
+                        newPage.info = [`Looking for a valid candidate to enter the base`];
                         const pivot = algorithm.dualFindPivot(newPage.cPrimeBarF, newPage.FOverbar, newPage.indexT, newPage.xFLabels);
 
                         if(pivot.indexH === null){
+                            newPage.info.push(`No valid candidate found`);
                             setFinished(true);
                             newPage.infeasible = true;
                         }
                         else{
                             setStep(2);
+
+                            newPage.info.push(`Found candidate at column ${pivot.indexH+1}`);
+                            newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
+                            newPage.info.push(`Found pivot at column ${pivot.indexH+1} of out of base variables, and row ${newPage.indexT+1}`);
+                            newPage.info.push(`Pivot value is ${newPage.FOverbar[newPage.indexT][pivot.indexH]}`);
                         }
 
                         newPage = {...newPage, ...pivot};
@@ -595,6 +639,7 @@ let LPP = () => {
 
                     case 2:
                         newPage = algorithm.updateTableau(newPage);
+                        newPage.info = [`Apply pivoting and updating tableau`];
 
                         setStep(0);
                         setHistory([...history, newPage]);
@@ -608,29 +653,29 @@ let LPP = () => {
         }
     }
 
-    let showMessage = message => {
-        setMessage(message);
-        setTimeout(() => setMessage(''), 5000);
-    }
+    // let showMessage = message => {
+    //     setMessage(message);
+    //     setTimeout(() => setMessage(''), 5000);
+    // }
 
     return (
         <>
             {!file && <>
-                <div className={file ? classes.dropClosed : classes.drop}>
+                {/* <div className={file ? classes.dropClosed : classes.drop}>
                     <Dropzone
                         getFile={getFile}
                         hide={file}
                         showMessage={showMessage}
                     />
-                </div>
+                </div> */}
 
                 <div className={file ? classes.dropClosed : classes.generator}>
                     <ExamplesManager getFile={getFile} loading={loading} />
                 </div>
 
-                <div className={file ? classes.dropClosed : classes.generator}>
+                {/* <div className={file ? classes.dropClosed : classes.generator}>
                     <RandomManager getFile={getFile} loading={loading} />
-                </div>
+                </div> */}
                 
                 <div className={classes.spacer}>
                     <Paper className={classes.paper}>

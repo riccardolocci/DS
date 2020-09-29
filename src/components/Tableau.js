@@ -19,7 +19,10 @@ const useStyles = makeStyles((theme) => createStyles({
     },
     pivotRow: {
         backgroundColor: 'rgba(255,0,0,0.3)',
-        color: 'white'
+        color: 'white',
+        '&>*': {
+            color: 'white'
+        }
     }
 }));
 

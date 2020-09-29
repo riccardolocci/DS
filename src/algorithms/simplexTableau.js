@@ -30,7 +30,7 @@ export const dualFindPivot = (cPrimeBarF, FOverbar, indexT, xFLabels) => {
     });
 
     return {
-        rowT, indexH, showPivot: true
+        rowT, indexH, showPivot: true, showIndexH: true
     }
 }
 
