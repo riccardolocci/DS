@@ -30,7 +30,7 @@ export const dualFindPivot = (cPrimeBarF, FOverbar, indexT, xFLabels) => {
     });
 
     return {
-        rowT, indexH, showPivot: true
+        rowT, indexH, showPivot: true, showIndexH: true
     }
 }
 
@@ -55,7 +55,7 @@ export const findPivot = (bOverbar, FOverbar, indexH) => {
     });
 
     return {
-        indexT, showPivot: true
+        indexT, showPivot: true, showIndexT: true
     }
 }
 
@@ -128,6 +128,8 @@ export const updateTableau = (prevTableau) => {
     const colH = matrix.getCol(FOverbar, indexH);
 
     prevTableau.showPivot = false;
+    prevTableau.showIndexH = false;
+    prevTableau.showIndexT = false;
 
     let aTH = colH[indexT];
 

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import PlotGraph from './PlotGraph';
 
-import Dropzone from './Dropzone';
+// import Dropzone from './Dropzone';
 import ExamplesManager from './ExamplesManager';
-import RandomManager from './RandomManager';
+import InfoBox from './InfoBox';
+import OriginalProblem from './OriginalProblem';
+// import RandomManager from './RandomManager';
+import Tableau from './Tableau';
 
-import { Button, Grid, Paper, Table, TableRow, TableHead, TableCell, TableBody } from '@material-ui/core';
+import { Button, Grid, Paper } from '@material-ui/core';
 
 import { formatNumber, getY } from '../utils';
 
@@ -49,6 +52,9 @@ const useStyles = makeStyles((theme) => createStyles({
         margin: 'auto',
         whiteSpace: 'nowrap'
     },
+    grid: {
+        padding: 12
+    },
     loading: {
         width: 50,
         float: 'right',
@@ -74,18 +80,13 @@ const useStyles = makeStyles((theme) => createStyles({
         transition: '0.2s',
         overflow: 'hidden'
     },
-    pivot: {
-        backgroundColor: 'red',
-        color: 'white'
-    },
     spacer: {
         position: 'relative',
         height: 80
     }
 }));
 
-const DEBUG=false
-const PASS=50
+const DEBUG=false;
 
 let LPP = () => {
     let [feasibleRegion, setFeasibleRegion] = useState([]);
@@ -98,7 +99,6 @@ let LPP = () => {
     let [polygon, setPolygon] = useState([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
     let [stage, setStage] = useState(0);
     let [step, setStep] = useState(0);
-    let [zoomLevel, setZoomLevel] = useState(3);
 
     let [history, setHistory] = useState([]);
     let [page, setPage] = useState(0);
@@ -228,7 +228,7 @@ let LPP = () => {
             if(history[0]) setPage(page+1);
         }
         else{
-            if(page > 0) setPage(page-1)
+            if(history[page]) setPage(page-1)
         }
     }
 
@@ -324,17 +324,27 @@ let LPP = () => {
     }
 
     let onClear = () => {
-        setLines([]); 
-        setMaxX(zoomLevel*PASS);
+        setFeasibleRegion([]);
+        setFile();
+        setLines([]);
+        setLoading(false);
+        setMaxX(30);
+        setMessage('');
+        setPhase(0);
         setPolygon([ [0,0], [maxX + 5,0], [maxX + 5,maxX + 5], [0,maxX + 5] ]);
-        setZoomLevel(3);
+        setStage(0);
+        setStep(0);
+
+        setHistory([]);
+        setPage(0);
+        setFinished(false);
     }
 
     let onIntegerSimplexAlgorithm = () => {
         const algorithm = require('../algorithms/cuttingPlane.js')
 
         let newPage = null;
-        if(phase > 0){
+        if(phase > 0 && phase < 4){
             newPage = JSON.parse(JSON.stringify(history[page])); 
         }
 
@@ -358,12 +368,18 @@ let LPP = () => {
         switch(phase){
             case 0:
                 //COMPUTE SIMPLEX
-                onSimplexAlgorithm();
-
                 if(finished){
+                    newPage = JSON.parse(JSON.stringify(history[page])); 
+                    newPage.info = [`Simplex algorithm finished`, `Checking integrality of the solution`];
+                    setHistory([...history, newPage]);
                     setFinished(false);
                     setPhase(1);
                 }
+                else {
+                    //COMPUTE SIMPLEX
+                    onSimplexAlgorithm();
+                }
+
                 break;
             case 1:
                 //CHECK INTEGRALITY
@@ -372,13 +388,24 @@ let LPP = () => {
                 if(newPage.genRowIndex < 0 || newPage.genRowIndex===null){
                     setPhase(5);
                     newPage.finished = true;
+                    newPage.info = ['The solution satisfies integrality'];
 
-                    if(newPage.genRowIndex===null) newPage.infeasible = true;
+                    if(newPage.genRowIndex===null){
+                        newPage.infeasible = true;
+                        newPage.info.push('But it is infeasible');
+                    }
+                    else{
+                        newPage.info.push('Optimal integer solution found');
+                    }
                 }
-                else setPhase(2);
+                else {
+                    setPhase(2);
+                    newPage.info = ['The solution does not satisfy integrality'];
+                    newPage.info.push('Applying cutting plane');
+                }
                 break;
             case 2:
-                
+                newPage.info = ['Computing new constraint', 'Applying cut'];
                 const newLine = algorithm.computeSlackOrLine(
                     newPage.slacks, 
                     -bOverbarGenFloor, 
@@ -408,6 +435,8 @@ let LPP = () => {
                 newPage.cPrimeBarB[0].push(0);
                 newPage.bOverbar.push(bOverbarRim);
                 newPage.BInvB.push(...BInvBRim);
+                
+                newPage.info = ['Adding rim to tableau'];
 
                 //BECAUSE BEFORE THERE WHERE bOverbarGen.length BASE ELEMENTS, NOW bOverbarGen.length+1
                 newPage.BInvB = newPage.BInvB.map((n,i) => [...n, i === newPage.bOverbar.length - 1 ? 1 : 0]);
@@ -424,19 +453,26 @@ let LPP = () => {
                     'slack'
                 );
 
+                newPage.info.push(`Computing new slack x${newSlackIndex} as function of original variables`);
+
                 setStage(2);
                 setStep(0);
                 setPhase(4);
                 break;
             case 4:
-                //FIND NEW X* BY DUAL SYMPLEX
-                //REPEAT FROM 1
-                onSimplexAlgorithm(true);
-
                 if(finished){
+                    newPage = JSON.parse(JSON.stringify(history[page])); 
+                    newPage.info = [`Dual simplex algorithm finished`, `Checking integrality of the solution`];
+                    setHistory([...history, newPage]);
                     setFinished(false);
                     setPhase(1);
                 }
+                else{
+                    //FIND NEW X* BY DUAL SYMPLEX
+                    //REPEAT FROM 1
+                    onSimplexAlgorithm(true);
+                }
+
                 break;
             default:
                 break;
@@ -457,7 +493,7 @@ let LPP = () => {
         
         switch(stage){
             case 0:
-                const initValues = {feasibleRegion, polygon, lines, ...algorithm.init(A, b, cPrime)};
+                const initValues = {feasibleRegion, info: ['Applying simplex algorithm', 'Initializing tableau'], lines, polygon, ...algorithm.init(A, b, cPrime)};
 
                 setHistory([initValues]);
                 setStage(stage+1);
@@ -467,14 +503,20 @@ let LPP = () => {
                 switch(step){
                     case 0:
                         newPage.indexH = algorithm.optimalityTest(newPage.cPrimeBarF[0]);
+                        newPage.info = ['Checking optimality...']
 
                         if(isNaN(newPage.indexH)) {
+                            newPage.info.push('Found no valid cadidate to enter base');
+
                             if(page === 0){
                                 let bOverbarIndexes = [];
                                 newPage.bOverbar.forEach((el,i) => {if(-el[0] < 0) bOverbarIndexes.push(i)});
 
+                                newPage.info.push('Checking if problem can be solved with dual simplex');
                                 if(bOverbarIndexes.length > 0){
                                     // ADMISSIBLE FOR DUAL SIMPLEX
+                                    newPage.info.push('Problem satisfies dual simplex feasibility rules');
+
                                     let nonZeroElements = {}
                                     bOverbarIndexes.forEach( idx => {
                                         const count = newPage.FOverbar[idx].filter(n => n>0).length;
@@ -494,28 +536,44 @@ let LPP = () => {
                                         ]
                                     });
 
+                                    newPage.info.push(`Multiplying row(s) ${multiplyByMinusOne.map(n => n+1).join(', ')} by -1`);
+
                                     setStage(2);
                                     setStep(0);
                                 }
                                 else{
                                     // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                    newPage.info.push('Problem does not satisfy dual simplex feasibility rules');
                                     setFinished(true);
                                 }
                             }
                             else{
                                 // NOT ADMISSIBLE FOR DUAL SIMPLEX
+                                newPage.info.push('Found optimal solution');
                                 setFinished(true);
                             }
                         }
-                        else setStep(1);
+                        else {
+                            newPage.info.push(`Solution can be improved`);
+                            newPage.info.push(`Found candidate at column ${newPage.indexH+1} of out of base variables`);
+                            newPage.info.push(`Variable ${newPage.xFLabels[newPage.indexH]} will enter the base`);
+                            newPage.showIndexH = true;
+                            setStep(1);
+                        }
 
                         setHistory([...history, newPage]);
 
                         break;
 
                     case 1:
+                        newPage.info = [`Looking for a valid candidate to leave base`];
                         const pivot = algorithm.findPivot(newPage.bOverbar, newPage.FOverbar, newPage.indexH);
                         newPage = {...newPage, ...pivot};
+                        
+                        newPage.info.push(`Found candidate at row ${newPage.indexT+1}`);
+                        newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
+                        newPage.info.push(`Found pivot at column ${newPage.indexH+1} of out of base variables, and row  ${newPage.indexT+1}`);
+                        newPage.info.push(`Pivot value is ${newPage.FOverbar[newPage.indexT][newPage.indexH]}`);
 
                         setStep(2);
                         setHistory([...history, newPage]);
@@ -524,10 +582,12 @@ let LPP = () => {
 
                     case 2:
                         newPage = algorithm.updateTableau(newPage);
+                        newPage.info = [`Apply pivoting and updating tableau`];
 
                         setStep(0);
                         setHistory([...history, newPage]);
                         break;
+
                     default:
                         break;
                 }
@@ -535,24 +595,41 @@ let LPP = () => {
             case 2:
                 switch(step){
                     case 0:
+                        newPage.info = ['Applying dual simplex', 'Checking dual optimality...']
                         newPage.indexT = algorithm.dualOptimalityTest(newPage.bOverbar);
 
-                        if(!Number.isInteger(newPage.indexT)) setFinished(true);
-                        else setStep(1);
+                        if(!Number.isInteger(newPage.indexT)) {
+                            newPage.info.push('Found optimal solution');
+                            setFinished(true);
+                        }
+                        else {
+                            newPage.info.push(`Solution can be improved`);
+                            newPage.info.push(`Found candidate at row ${newPage.indexT+1}`);
+                            newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
+                            newPage.showIndexT = true;
+                            setStep(1);
+                        }
 
                         setHistory([...history, newPage]);
 
                         break;
 
                     case 1:
+                        newPage.info = [`Looking for a valid candidate to enter the base`];
                         const pivot = algorithm.dualFindPivot(newPage.cPrimeBarF, newPage.FOverbar, newPage.indexT, newPage.xFLabels);
 
                         if(pivot.indexH === null){
+                            newPage.info.push(`No valid candidate found`);
                             setFinished(true);
                             newPage.infeasible = true;
                         }
                         else{
                             setStep(2);
+
+                            newPage.info.push(`Found candidate at column ${pivot.indexH+1}`);
+                            newPage.info.push(`Variable ${newPage.xBLabels[newPage.indexT]} will leave the base`);
+                            newPage.info.push(`Found pivot at column ${pivot.indexH+1} of out of base variables, and row ${newPage.indexT+1}`);
+                            newPage.info.push(`Pivot value is ${newPage.FOverbar[newPage.indexT][pivot.indexH]}`);
                         }
 
                         newPage = {...newPage, ...pivot};
@@ -562,6 +639,7 @@ let LPP = () => {
 
                     case 2:
                         newPage = algorithm.updateTableau(newPage);
+                        newPage.info = [`Apply pivoting and updating tableau`];
 
                         setStep(0);
                         setHistory([...history, newPage]);
@@ -575,29 +653,29 @@ let LPP = () => {
         }
     }
 
-    let showMessage = message => {
-        setMessage(message);
-        setTimeout(() => setMessage(''), 5000);
-    }
+    // let showMessage = message => {
+    //     setMessage(message);
+    //     setTimeout(() => setMessage(''), 5000);
+    // }
 
     return (
         <>
             {!file && <>
-                <div className={file ? classes.dropClosed : classes.drop}>
+                {/* <div className={file ? classes.dropClosed : classes.drop}>
                     <Dropzone
                         getFile={getFile}
                         hide={file}
                         showMessage={showMessage}
                     />
-                </div>
+                </div> */}
 
                 <div className={file ? classes.dropClosed : classes.generator}>
                     <ExamplesManager getFile={getFile} loading={loading} />
                 </div>
 
-                <div className={file ? classes.dropClosed : classes.generator}>
+                {/* <div className={file ? classes.dropClosed : classes.generator}>
                     <RandomManager getFile={getFile} loading={loading} />
-                </div>
+                </div> */}
                 
                 <div className={classes.spacer}>
                     <Paper className={classes.paper}>
@@ -607,64 +685,36 @@ let LPP = () => {
                     </Paper>
                 </div>
             </>}
-            {file && <Grid container direction='row'>
-                <Grid container direction='row' item xs={4}>
-                    <Grid item xs={12}>
-                        <PlotGraph 
-                            feasibleRegion={page > 0 ? history[page].feasibleRegion : feasibleRegion}
-                            lines={page > 0 ? history[page].lines : lines}
-                            level={zoomLevel}
-                            maxX={maxX}
-                            polygon={page > 0 ? history[page].polygon : polygon}
-                            point={page > 0 ? history[page].point : null}
-                        />
+            {file && <Grid container direction='column' className={classes.grid}>
+                <Grid container direction='row' item xs={12} className={classes.grid}>
+                    <Grid container direction='row' item xs={5} className={classes.grid}>
+                        <Grid item xs={12}>
+                            <PlotGraph 
+                                feasibleRegion={history[page] ? history[page].feasibleRegion : feasibleRegion}
+                                lines={history[page] ? history[page].lines : lines}
+                                maxX={maxX}
+                                polygon={history[page] ? history[page].polygon : polygon}
+                                point={history[page] ? history[page].point : null}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Button variant='outlined' onClick={onClear}>CLEAR</Button>
+                            <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
+                            <Button variant='outlined' disabled={!history[page+1] && history[page] && history[page].finished} onClick={() => handleHistory(true)}>{">"}</Button>
+                            {history[page] && page}
+                        </Grid>
                     </Grid>
-                    <Grid item xs={12}>
-                        <Button variant='outlined' onClick={onAdd}>ADD LINE</Button>
-                        <Button variant='outlined' onClick={onClear}>CLEAR</Button>
-                        <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
-                        <Button variant='outlined' disabled={!history[page+1] && history[page] && history[page].finished} onClick={() => handleHistory(true)}>{">"}</Button>
-                        {/* <Button variant='outlined' onClick={() => onIntegerSimplexAlgorithm()}>CUTTING PLANE</Button> */}
-                        {page}
+                    <Grid item xs={7} className={classes.grid}>
+                        <Tableau page={history[page] ? history[page] : {}} />
                     </Grid>
                 </Grid>
-                <Grid container direction='column' item xs={8}>
-                    {page>0 && <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell key="head-empty-1"></TableCell>
-                                <TableCell key="head-empty-2"></TableCell>
-                                {history[page].xBLabels.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
-                                {history[page].xFLabels.map(n => (<TableCell key={`label-${n}`}>{n}</TableCell>))}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell key='-z'>-z</TableCell>
-                                <TableCell key='cBar0'>{formatNumber(history[page].cBar0)}</TableCell>
-                                {history[page].cPrimeBarB[0].map((n, i) => (<TableCell key={`cPrimeBarB${i}`}>{formatNumber(n)}</TableCell>))}
-                                {history[page].cPrimeBarF[0].map((n, i) => (<TableCell key={`cPrimeBarF${i}`}>{formatNumber(n)}</TableCell>))}
-                            </TableRow>
-                            {history[page].xBLabels.map((n,i) => (
-                                <TableRow key={`baseValuesRow${i}`}>
-                                    <TableCell key={`baseValues${n}`}>{n}</TableCell>
-                                    <TableCell key={`bOverbar${i}`}>{formatNumber(history[page].bOverbar[i][0])}</TableCell>
-                                    {history[page].BInvB[i].map((n1, j) => (<TableCell key={`BInvB${j}_${i},${n1}`}>{formatNumber(n1)}</TableCell>))}
-                                    {history[page].FOverbar[i].map((n1, j) => (
-                                        <TableCell 
-                                            className={
-                                                history[page].showPivot && 
-                                                history[page].indexT===i && history[page].indexH===j ? classes.pivot : ''
-                                            } 
-                                            key={`FOverbar${j}_${i},${n1}`}
-                                        >
-                                            {formatNumber(n1)}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>}
+                <Grid container direction='row' item xs={12} className={classes.grid}>
+                    <Grid item xs={5} className={classes.grid}>
+                        <OriginalProblem problem={file} />
+                    </Grid>
+                    <Grid item xs={7} className={classes.grid}>
+                        <InfoBox info={history[page] ? history[page].info : []}/>
+                    </Grid>
                 </Grid>
             </Grid>}
         </>

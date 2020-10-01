@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Typography } from '@material-ui/core';
+
 import { getX, getY } from '../utils';
 
 import Plotly from 'plotly.js';
@@ -101,25 +103,33 @@ let PlotGraph = (props) => {
   }];
   
   return (
-    <Plot
-      data = {data}
-      layout = {{
-        hovermode: 'closest',
-        shapes: shapes,
-        title: title,
-        xaxis: {
-          range: [-maxX/10, maxX],
-          // fixedrange: true
-        },
-        yaxis: {
-          range: [-maxX/10, maxX],
-          // fixedrange: true
-        },
-        // width: 1000,
-        // height: 500,
-        // responsive: true,
-      }}
-    />
+    <>
+      <Typography align="left" display="block" variant="h6">Geometric representation</Typography>
+      <Plot
+        style={{
+          height: "50vh"
+        }}
+        data = {data}
+        layout = {{
+          hovermode: 'closest',
+          shapes: shapes,
+          title: title,
+          xaxis: {
+            range: [-maxX/10, maxX],
+            scaleanchor: "y", 
+            scaleratio: 1
+            // fixedrange: true
+          },
+          yaxis: {
+            range: [-maxX/10, maxX],
+            // fixedrange: true
+          },
+          // width: 1000,
+          // height: 500,
+          responsive: true,
+        }}
+      />
+    </>
   );
 }
 

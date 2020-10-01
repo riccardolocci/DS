@@ -23,7 +23,7 @@ let NavBar = () => {
   const classes = useStyles();
     
   return(
-    <AppBar position="absolute" className="NavBar-appBar">
+    <AppBar position="absolute" className={classes.appBar}>
       <Toolbar className={classes.toolbar}>
           <span className={classes.spacer}/>
           <Typography variant="h6" color="inherit" className={classes.typography}>
