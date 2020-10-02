@@ -104,3 +104,10 @@ dist
 .tern-port
 
 build/
+
+#LaTeX
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
