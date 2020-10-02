@@ -4,7 +4,11 @@
 \usepackage[parfill]{parskip}
 
 \title{Cutting plane algorithm: \\ an interactive web application}
+<<<<<<< HEAD
 \date{October 2020}
+=======
+\date{July 2020}
+>>>>>>> DS-17: First report (not finished)
 \author{Riccardo Locci}
 
 \usepackage{algorithm}
@@ -71,12 +75,15 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{amsfonts}
 
+<<<<<<< HEAD
 \usepackage{mathtools}
 \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
 \algdef{SE}{Begin}{End}{\textbf{begin}}{\textbf{end}}
 
+=======
+>>>>>>> DS-17: First report (not finished)
 \begin{document}
     \maketitle
         
@@ -114,7 +121,12 @@
     \begin{section}{Integer Linear Programming formal definition}
 
         Linear programming (LP, also called linear optimization) is a method to achieve the best outcome (such as maximum 
+<<<<<<< HEAD
         profit or lowest cost) in a mathematical model whose requirements are represented by linear relationships.
+=======
+        profit or lowest cost) in a mathematical model whose requirements are represented by linear relationships. 
+        Linear programming is a special case of mathematical programming (also known as mathematical optimization).
+>>>>>>> DS-17: First report (not finished)
         \cite{wiki:lp}
 
         More formally, linear programming is a technique for the optimization of a linear objective function, subject to 
@@ -123,14 +135,23 @@
         each of which is defined by a linear inequality. 
         Its objective function is a real-valued affine (linear) function defined on this polyhedron. 
         A linear programming algorithm finds a point in the polytope where this function has the smallest (or largest) 
+<<<<<<< HEAD
         value if such a point exists. \cite{wiki:lp}
         \newpage
+=======
+        value if such a point exists.
+        \cite{wiki:lp}
+>>>>>>> DS-17: First report (not finished)
 
         Linear programs are problems that can be expressed in canonical form as:
         
         \begin{equation*}
             \begin{array}{ll@{}ll}
+<<<<<<< HEAD
                 \text{maximize}  & c^{T}x \\
+=======
+                \text{maximize}  & c'x \\
+>>>>>>> DS-17: First report (not finished)
                 \text{subject to} & Ax \leq b \\
                 \text{and} & x \ge 0
             \end{array}
@@ -138,7 +159,11 @@
 
         where $x$ represents the vector of variables (to be determined), $c$ and $b$ are vectors of (known) coefficients and 
         $A$ is a (known) matrix of coefficients.
+<<<<<<< HEAD
         The expression to be maximized or minimized is called the objective function ($c^{T}x$ in this case). 
+=======
+        The expression to be maximized or minimized is called the objective function ($c'x$ in this case). 
+>>>>>>> DS-17: First report (not finished)
         The inequalities $Ax \leq b$ and $x \ge 0$ are the constraints which specify a convex polytope over which the objective 
         function is to be optimized. 
         In this context, two vectors are comparable when they have the same dimensions. 
@@ -153,15 +178,24 @@
         \cite{wiki:lp}
 
         An integer programming problem is a mathematical optimization or feasibility program in which some or all of the 
+<<<<<<< HEAD
         variables are restricted to be integers. 
         In many settings the term refers to integer linear programming (ILP), in which the objective function and the 
         constraints (other than the integer constraints) are linear.
+=======
+        variables are restricted to be integers. In many settings the term refers to integer linear programming (ILP), 
+        in which the objective function and the constraints (other than the integer constraints) are linear.
+>>>>>>> DS-17: First report (not finished)
 
         An integer linear program in canonical form is expressed as:
 
         \begin{equation*}
             \begin{array}{ll@{}ll}
+<<<<<<< HEAD
                 \text{maximize}  & c^{T}x \\
+=======
+                \text{maximize}  & c'x \\
+>>>>>>> DS-17: First report (not finished)
                 \text{subject to}& Ax \leq b \\
                 \text{and} & x \ge 0 \\
                 \text{and} & x \in \mathbb{Z}^n \\
@@ -171,6 +205,7 @@
     \end{section}
 
     \begin{section}{Overview about Cutting Plane Method}
+<<<<<<< HEAD
         Cutting plane methods for MILP work by solving a non-integer linear program, the linear relaxation of the given integer 
         program. 
         The theory of Linear Programming dictates that under mild assumptions (if the linear program has an optimal solution, 
@@ -402,10 +437,193 @@
                 the dual version works by finding a good basic variable that will leave the base.
                 The pair of selected variables will again identify a pivot element that is the used to update the rows of the current tableau.
                 Once the dual algorithm finishes, we have a solution that needs again to be tested for integrality.
+=======
+        % As previously said, Dijkstra's algorithm is an algorithm to find shortest paths between nodes within a graph 
+        % and it belongs to the class of label setting algorithms.
+        % In particular, we want to find the $shortest\ path$ from a node $s$ (called $source$) to a node $t$ (called 
+        % $sink$).
+        % At each iteration, nodes are divided into a set of $permanent\ nodes$ and a set of $temporary\ nodes$:
+        % permanent nodes are nodes whose labels cannot be improved because they are already optimal,
+        % temporary nodes are nodes whose labels are not proved to be optimal\cite{book}. 
+        % The distance label to any permanent node represents the shortest distance from the source to that node. 
+        % For any temporary node, the distance label is an upper bound on the shortest path distance to that node.
+        % The basic idea of the algorithm is to fan out from node $s$ and permanently label nodes in the order of their 
+        % distances from node $s$\cite{book}.
+        % Initially, we give node $s$ a permanent label of zero, and each other node $j$ a temporary label equal to $\infty$.
+        % In label settings algorithms, at each iteration, a temporary node is selected so that it is removed from the 
+        % temporary nodes set and inserted in the permanent nodes set\cite{book}.
+        
+        % \begin{subsection}{Algorithm}
+        %     The idea is to select a feasible temporary node $i$ and move it in the permanent nodes set updating the 
+        %     distance labels of nodes linked with $i$. 
+        %     Specifically, what we do is to select a temporary node $i$ with minimum distance label and make that node a 
+        %     permanent one, check its adjacency list $A(i)$ and update the distance labels of the nodes linked with $i$. 
+        %     When we update the distance labels, we use the equation:
+        %     $$
+        %         d(j) = d(i) + c_{ij}
+        %     $$
+
+        %     where $d(j)$ and $d(i)$ are respectively the distances of node $j$ and node $i$ from the source. 
+        %     If we update the distance label, then we update the precedent of node $j$ as follows: 
+        %     $$
+        %         pred(j) = i
+        %     $$
+        % \end{subsection}
+
+        % \begin{subsection}{Pseudocode}
+        %     The following pseudocode\cite{book} represents the classical version of the algorithm, which will be used as a kickstart
+        %     for the final web application:
+        %     \vspace{10px}
+
+        %     \begin{algorithm}
+        %         \caption{Dijkstra's Algorithm}\label{alg:dijkstra}
+        %         \begin{algorithmic}[1]
+        %             \Procedure{Dijkstra}{}
+        %                 \State $S := \emptyset$, $\overline{S}:=N$
+        %                 \State $d(i) := \infty$, $\forall i \in N$
+        %                 \State $d(s) := 0$, $pred(s) := 0$
+        %                 \While {$|S| < n$}
+        %                     \State let $i \in \overline{S}$ be a node for which $d(i) := \min\{d(j) : j \in \overline{S}\}$
+        %                     \State $S := S \cup \{i\}$
+        %                     \State $\overline{S} := \overline{S} - \{i\}$
+        %                     \For { $(i,j) \in A(i)$ }
+        %                         \If {$d(j) > d(i) + c_{ij}$}
+        %                             \State $d(j) := d(i) + c_{ij}$
+        %                             \State $pred(j) := i$
+        %                         \EndIf
+        %                     \EndFor
+        %                 \EndWhile
+        %             \EndProcedure
+        %         \end{algorithmic}   
+        %     \end{algorithm}    
+        %     \vspace{10px}     
+        % \end{subsection}
+    \end{section}
+
+    \begin{section}{Implementation of the algorithm}
+        % In this section we will discuss the proposed implementation, but first there are some aspects that require some 
+        % clarifications. 
+        % It is not possible to perform a completely random generation of a graph, since it must be a graph on which is 
+        % possible to perform a Shortest Path Problem solving algorithm.
+        % Because of this, the application allows to generate a random graph valid as input for Dijkstra's algorithm, without 
+        % the risk of infinite loops. \\
+        % Another point of discussion will be the algorithm itself: to allow the application to behave in the right way, 
+        % \textbf{Algorithm \ref{alg:dijkstra}} will be split in multiple steps. \\
+        % Finally, since the target of this work is to create a graphical user interface to illustrate and better understand
+        % Dijkstra's algorithm, computational complexity was not taken into account: this obviously leaves space for future 
+        % optimizations.
+
+        \begin{subsection}{Data structures}
+            % The application uses simple lists of nodes and arcs to represent the graph.
+            % This choice is partly forced by the library\cite{github:digraph} used to draw the graph in the graphical user 
+            % interface, since the library requires this exact data structure as input.
+            % Considering that the target of this work was to implement Dijkstra's algorithm, the role of the drawings was delegated to
+            % a ready-to-use library to cut development times.
+
+            % A sample graph is then represented by the following JSON file:
+
+            % \vspace{10px}
+            % \begin{lstlisting}[style=json,caption={JSON file example},captionpos=b,label={data:json}]
+            %     {
+            %         "nodes": [
+            %             {
+            %                 "id": 1,
+            %                 "title": "1"
+            %             },
+            %             {
+            %                 "id": 2,
+            %                 "title": "2"
+            %             }
+            %         ],
+            %         "edges": [
+            %             {
+            %                 "source": 1,
+            %                 "target": 2,
+            %                 "cost": 5
+            %             }
+            %         ]
+            %     }
+            % \end{lstlisting}
+            % \vspace{20px}
+            
+            % The result will be the following graph:
+            % \vspace{10px}
+            % \begin{figure}[h]
+            %     \includegraphics[scale=0.2]{graph1.png}
+            %     \centering
+            %     \vspace{20px}
+            %     \begin{description}
+            %         \centering
+            %         \item[Figure 1] Graph drawn from Listing \ref{data:json}
+            %     \end{description}
+            % \end{figure}
+            % \vspace{10px}
+            
+            % This data structure is not efficient when implementing search functions for nodes or arcs. Thus, to improve code quality, the first
+            % operation after file generation will create some support data structures:
+            % \begin{itemize}
+            %     \item A JavaScript object that works as an index to find nodes;
+            %     \item A list for each node to instantly get its leaving star.
+            % \end{itemize}
+            % Moreover, thanks to these additional data structure we can retrieve useful information in constant time.
+        \end{subsection}
+        
+        \begin{subsection}{Custom implementation}
+            % Classical implementations of Dijkstra's algorithm work as a unique flow that from an input graph computes shortest paths and return
+            % them as their output.
+            % This work will obviously return the same output of a classical implementation, but it will also show every step that
+            % leads to the computation of every path.
+            % It follows that the algorithm cannot work as a single block of code, but it needs to be split and modularized in 
+            % multiple phases.
+
+            % The following sections will cover the content of the three phases of the custom algorithm.
+            % The algorithm works in two modes: single-target mode and multi-target mode; in multi-target mode the algorithm marks 
+            % all the nodes (except for the source) as sinks and skips the third phase (see Section \ref{subsec:postprocessing}).
+
+            \begin{subsubsection}{Preprocessing}
+                % Preprocessing is the first phase that will run after input is provided. 
+                % Its role is to populate the supporting data structures and initialize other data structures used by other features 
+                % (i.e.: navigable algorithm's history).
+                % It also covers the first steps of \textbf{Algorithm \ref{alg:dijkstra}} (rows 2-4) and updates the graph in the
+                % canvas to highlight the source node and (in single taget mode only) the sink node, and to initialize distance labels
+                % in the canvas. 
+            \end{subsubsection}
+
+            \begin{subsubsection}{Processing}
+                % This phase is the longest and the most important one since it covers the remaining instructions on \textbf{Algorithm \ref{alg:dijkstra}}.
+                % Being the most complex phase, it is split in a series of steps, and every step is composed by a set of substeps. 
+                % A new step begins every time we select a node from the temporary nodes set and ends when we have visited each 
+                % node directly linked to the one that started the current step. Every time a new step begins, the application updates
+                % the graph in the canvas by highlighting the colour of the current node. Accordingly, within a step, a substep begins
+                % every time we visit a new node from current's node leaving star: during each substep the application performs all the
+                % checks needed to update the (temporary) shortest paths and distances from the source and shows what changed by:
+
+                % \begin{itemize}
+                %     \item updating colours and distance labels of every new reached node;
+                %     \item updating the info box with the list of changes;
+                %     \item updating the table of the (temporary) shortest paths
+                % \end{itemize}
+
+                % In short, every iteration of the outer loop ($while$ loop at line 5 of Algorithm \ref{alg:dijkstra}) is treated as a distinct step; 
+                % moreover, each iteration of the inner loop ($for$ loop at line 9 Algorithm \ref{alg:dijkstra}) runs as a separate substep within the same step.
+            \end{subsubsection}
+
+            \begin{subsubsection}{Postprocessing}
+                \label{subsec:postprocessing}
+                % This phase is run only in single-target mode to show how the shortest path from the source to the sink is found.
+                % Indeed, the application recursively fetches the precedent of each node in the shortest path starting from the sink 
+                % until it gets to the source. Every time it jumps from a node to its precedent, the application highlights the nodes
+                % and arcs involved in the path.
+
+                % We can say that the application partly applies postprocessing in multi-target mode: once we get to the end of the
+                % processing history, the application allows to highlight one path at a time by interacting with the shortest paths
+                % table.
+>>>>>>> DS-17: First report (not finished)
             \end{subsubsection}
         \end{subsection}
 
         \begin{subsection}{Web application GUI}
+<<<<<<< HEAD
             Within this section we will show how the application appears and which parts compose the Graphical User Iterface:
             we will talk about all the possible interactions and features, and how they influence the understanding of the 
             algorithm.
@@ -474,10 +692,103 @@
                 the row gave by the leaving basic variable (if both are highlighted, the pivot value is highlighted too), and the new tableau obtained
                 after the pivoting operation.
             \end{subsubsection}
+=======
+            % Within this section we will show how the application appears and which parts compose the Graphical User Iterface:
+            % we will talk about all the possible interactions and features, and how they influence the understanding of the 
+            % algorithm.
+            
+            % \begin{figure}[h]
+            %     \includegraphics[scale=0.23]{gui1.png}
+            %     \centering
+            %     \begin{description}
+            %         \centering
+            %         \item[Figure 2] Landing page and input choice 
+            %     \end{description}
+            % \end{figure}
+
+            \begin{subsubsection}{Input choices}
+                % \label{subsec:input}
+                % First page of the web application\cite{web:app} allows multiple ways to provide a graph as input for the
+                % algorithm. The page is divided in three sections:
+                
+                % \begin{itemize}
+                %     \item a \textbf{drop area} where to drop a properly formatted JSON file describing a graph (see Listing \ref{data:json}): it is also 
+                %             possible to select a file from file explorer by clicking over the area;
+                %     \item a small set of \textbf{sample graphs} on which the application was tested: every file presents a name that points the 
+                %             number of nodes and arcs;
+                %     \item a \textbf{generation form} that allows the user to create a pseudo-random graph.
+                % \end{itemize}
+
+                % The generation form needs two inputs: the number of nodes and the number of arcs.
+                % The maximum number of nodes is limited to 50 since a greater number would be disadvantageous for multiple reasons:
+
+                % \begin{itemize}
+                %     \item being the focus of this work strongly graphical, the drawn graph must be understandable: too many nodes or arcs will
+                %             limit this aspect;
+                %     \item to completely execute the algorithm the user would need to go through every step by manually clicking on the \textbf{Next} button 
+                %             (see Section \ref{subsec:interaction}): this would be frustrating when working with a very big graph;
+                %     \item the chosen drawing library is not completely suited to excessively customize the available graph entities: to draw them as it was
+                %             done, every entity needs to be rendered twice. So, even if the algorithm runs smoothly, when the number of entities is too big
+                %             the GUI shows some rendering slowness.
+                % \end{itemize}
+               
+                % Moreover, the number of nodes limits the number of arcs according to the following inequality:
+
+                % $$
+                %     m \leq \frac{n * (n-1)}{2}
+                % $$
+                
+                % where $m$ is the number of arcs and $n$ is the number of nodes.
+
+                % The generator will then create a graph with the following pattern:
+                
+                % \begin{figure}[h]
+                %     \includegraphics[scale=0.6]{graph2.png}
+                %     \centering
+                %     \begin{description}
+                %         \centering
+                %         \item[Figure 3] Random graph with n=6 and max m
+                %     \end{description}
+                % \end{figure}
+
+                % that is, node $i$-th's leaving star only contains nodes with id $> i$.
+
+                % This pattern ensures that graph's topology never contains loops, so that the algorithm can work without problems. 
+
+
+            \end{subsubsection}
+
+            \begin{subsubsection}{Canvas}
+                % After input is provided, the graph will be drawn in the canvas: its purpouse is to help understanding what is happening while the algorithm
+                % runs.
+                % Nodes are positioned in such a way that they would not interfere with the comprehensibility of the topology, however this is not always possible (e.g.
+                % nodes having too many entering or leaving arcs): to handle these situations, it is possible to manually move nodes.
+                % Each node is drawn as a circle containing its id in the center, and border colour of the circle indicates the status of the node: each status is
+                % described in the legend.
+                % Moreover, below each node a number can be found which represents the distance label of that node from the source.
+                % Arcs are drawn as arrows that start from their source and end to their target: they can assume a subset of statuses compared to nodes but the
+                % colours refer to the same legend of nodes. Near the center of each arc there can be found its cost, if its value is greater than zero.
+                % On the left-below corner of the canvas is placed a minimal menu of two elements:
+                % \begin{itemize}
+                %     \item a \textbf{sliding bar} to zoom the canvas in or out, useful when the number of nodes is too high to display them all;
+                %     \item a \textbf{center button} that computes the center of gravity of the graph and accordingly repositions the canvas;
+                % \end{itemize}
+            \end{subsubsection}
+            
+            % \begin{figure}[h]
+            %     \includegraphics[scale=0.23]{gui2.png}
+            %     \centering
+            %     \begin{description}
+            %         \centering
+            %         \item[Figure 4] Application GUI example
+            %     \end{description}
+            % \end{figure}
+>>>>>>> DS-17: First report (not finished)
 
             \begin{subsubsection}{Interaction section}
                 \label{subsec:interaction}
 
+<<<<<<< HEAD
                 Below the canvas there are some elements that help to iteract with the application:
                 \begin{itemize}
                     \item the \textbf{clear button} reverts the current state of the application and sends the user back to the input page;
@@ -502,11 +813,41 @@
                 Every step produces a change in almost all the section of the graphical user interface (except for the formal problem representation 
                 section, that only shows the starting problem), which is intuitevely understandable thanks to its graphical and geometrical nature; 
                 however, there are steps that cannot be effectively communicated through figures and need a written explanation.
+=======
+                % Below the canvas there are some elements that help to iteract with the application:
+                % \begin{itemize}
+                %     \item the \textbf{clear button} reverts the current state of the application and sends the user back to the input page;
+                %     \item the \textbf{reset button} reverts the state the application to the point where input was just being provided;
+                %     \item the \textbf{download button} allows to download the current drawn graph as a JSON file;
+                %     \item the \textbf{legend} describes the colours in the canvas and allows to change them by clicking on each status;
+                %     \item the \textbf{navigation buttons} are used to keep executing the algorithm and visualize its history.
+                %     \item the \textbf{source/sink(s) selectors} are used to specify the source node and the target node(s).
+                % \end{itemize}
+
+                % Every time the algorithm has to keep executing, the user need to press on the \textbf{Next} button (the navigation button on the right): the
+                % new state is computed only once then it is stored within a proper data structure. 
+                % By storing every state, the application allows to navigate algorithm execution history back and forth.
+
+            \end{subsubsection}
+
+            \begin{subsubsection}{Info section}
+                % The last section provides written descriptions and tabular representations of what it is happening in a given state of the algorithm.
+                
+                % On the left, there is a \textbf{Info} box that shows in which state the algorithm is with the phase number, step number and substep number:
+                % these three numbers help the user referring to a specific point in time within an execution. 
+                % The last part of this section is a written list of actions that were performed during that particular state: this information is stored with other 
+                % ones regarding the state (such as status of nodes and arcs, temporary paths, distances).
+
+                % On the right, the application shows a \textbf{Paths} table that lists the path to reach every node discovered until that point in time and their
+                % distance from the source. 
+                % If the selected state is the last performed by the algorithm, it is also possible to click on one particular row to display that path on the canvas.
+>>>>>>> DS-17: First report (not finished)
             \end{subsubsection}
         \end{subsection}
     \end{section}
 
     \begin{section}{Results and performances}
+<<<<<<< HEAD
         This application can successfully run a (properly customized) classical implementation of cutting-plane algorithm for integer linear 
         programming problems. 
         It was tested on a set of problems provided within the \textbf{book}\cite{book} and on \textbf{IBM ILOG CPLEX Optimization Studio}
@@ -534,6 +875,36 @@
         An optimized algorithm to generate the polygon that defines the admissible space, a better organization of the interface to improve 
         user experience, multiple algorithms to choose, support for other input formats (e.g.: direct support for CPLEX models): this are just 
         some example of how the application can be extended in the future.
+=======
+        % This application can successfully run a (properly customized) classical implementation of Dijkstra's algorithm for shortest path problems. 
+        % It was tested on a set of graphs that satisfy the topology provided in Section \ref{subsec:input} and on \textbf{IBM ILOG CPLEX Optimization Studio}
+        % \cite{web:cplex}: to compare the results a Python script (see GitHub repository \cite{github:project}) was developed to convert JSON files to CPLEX 
+        % models and then the resulting objective functions were compared. 
+        % All the tests returned the same results on both the web application and IBM ILOG CPLEX Optimization Studio.
+
+        % The application does not allow to jump to the end of the execution since its objective is to illustrate how the algorithm behaves at every step, so its 
+        % performaces were not taken into account (the principal data structure used were lists). 
+        % However, it is true that at every step the graph needs to be drawn again because of the library\cite{github:digraph} that was used; moreover the 
+        % computational effort needed to draw the graph further increases because the library does not provide a conventional way to heavy customize graph's entities, 
+        % so each one needs to be drawn again after first rendering.
+        % This is not perceivable on a simple graph, but the application shows its limits while working with too large inputs.
+    \end{section}
+
+    \begin{section}{Conclusions}
+        % The developed web application described in this work allows to correctly run Dijkstra's classical algorithm on graphs provided as JSON files or generated
+        % through the application's generator, and to see a step-by-step execution thanks to a user-friendly interface that at each iteration draws the graph and 
+        % describes what it is really happening from the beginning to the end. 
+        % Moreover it is possible not only to proceed forward into the execution, but to go back in time, too: this feature allows a better understanding and analysis 
+        % of the algorithm and provide a different perspective on particular topologies. 
+        % The possibility to select and highlight a particular shortest path allows to check multiple targets and analyze how they are reached when stating from a 
+        % particular source. 
+
+        % At this point in development, the application is surely useful when studying Dijkstra's algorithm, but there are many optimizations and features
+        % that can be considered to improve this work. 
+        % A custom drawing library developed to precisely address the needs of the application, a better organization of the interface to improve user experience, 
+        % multiple algorithms to choose, support for other input formats (e.g.: direct support for CPLEX models): this are just some example of how the application 
+        % can be extended in the future.
+>>>>>>> DS-17: First report (not finished)
     \end{section}
 
     \begin{thebibliography}{7}
@@ -548,6 +919,14 @@
         \textit{Linear programming},
         \url{https://en.wikipedia.org/wiki/Linear_programming}
 
+<<<<<<< HEAD
+=======
+        \bibitem{wiki:simplex} 
+        Wikipedia,
+        \textit{Simplex algorithm},
+        \url{https://en.wikipedia.org/wiki/Simplex_algorithm}
+        
+>>>>>>> DS-17: First report (not finished)
         \bibitem{book} 
         Matteo Fischetti
         \textit{ Lezioni di Ricerca Operativa }
@@ -557,6 +936,7 @@
         \textit{React Plotly}:
         \url{https://github.com/plotly/react-plotly.js/}
 
+<<<<<<< HEAD
         \bibitem{github:numbers} 
         GitHub,
         \textit{Numbers.js}:
@@ -567,6 +947,8 @@
         \textit{Simplex algorithm},
         \url{https://en.wikipedia.org/wiki/Simplex_algorithm}
 
+=======
+>>>>>>> DS-17: First report (not finished)
         \bibitem{web:app} 
         Project Web Application: \url{https://riccardolocci.github.io/DS}
         
@@ -578,7 +960,11 @@
         \bibitem{github:project} 
         GitHub,
         \textit{Project Repository},
+<<<<<<< HEAD
         \url{https://github.com/riccardolocci/DS}
+=======
+        \url{https://github.com/riccardolocci/NFO}
+>>>>>>> DS-17: First report (not finished)
 
     \end{thebibliography}
 
