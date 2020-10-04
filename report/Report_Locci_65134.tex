@@ -4,7 +4,7 @@
 \usepackage[parfill]{parskip}
 
 \title{Cutting plane algorithm: \\ an interactive web application}
-\date{July 2020}
+\date{October 2020}
 \author{Riccardo Locci}
 
 \usepackage{algorithm}
@@ -406,160 +406,134 @@
         \end{subsection}
 
         \begin{subsection}{Web application GUI}
-            % Within this section we will show how the application appears and which parts compose the Graphical User Iterface:
-            % we will talk about all the possible interactions and features, and how they influence the understanding of the 
-            % algorithm.
+            Within this section we will show how the application appears and which parts compose the Graphical User Iterface:
+            we will talk about all the possible interactions and features, and how they influence the understanding of the 
+            algorithm.
             
-            % \begin{figure}[h]
-            %     \includegraphics[scale=0.23]{gui1.png}
-            %     \centering
-            %     \begin{description}
-            %         \centering
-            %         \item[Figure 2] Landing page and input choice 
-            %     \end{description}
-            % \end{figure}
+            \begin{figure}[h]
+                \includegraphics[scale=0.23]{gui1.png}
+                \centering
+                \begin{description}
+                    \centering
+                    \item[Figure 2] Landing page and input choice 
+                \end{description}
+            \end{figure}
 
             \begin{subsubsection}{Input choices}
-                % \label{subsec:input}
-                % First page of the web application\cite{web:app} allows multiple ways to provide a graph as input for the
-                % algorithm. The page is divided in three sections:
+                \label{subsec:input}
+                First page of the web application\cite{web:app} allows multiple ways to provide a problem as input for the algorithm. 
+                The page is divided in three sections:
                 
-                % \begin{itemize}
-                %     \item a \textbf{drop area} where to drop a properly formatted JSON file describing a graph (see Listing \ref{data:json}): it is also 
-                %             possible to select a file from file explorer by clicking over the area;
-                %     \item a small set of \textbf{sample graphs} on which the application was tested: every file presents a name that points the 
-                %             number of nodes and arcs;
-                %     \item a \textbf{generation form} that allows the user to create a pseudo-random graph.
-                % \end{itemize}
+                \begin{itemize}
+                    \item a \textbf{drop area} where to drop a properly formatted JSON file describing a problem (see Listing \ref{data:json}): 
+                            it is also possible to select a file from file explorer by clicking over the area;
+                    \item a small set of \textbf{sample problems} on which the application was tested: every file presents a name that points the 
+                            number of nodes and arcs;
+                    \item a \textbf{generation form} that allows the user to create a pseudo-random linear programming problem with two decisional
+                            variables.
+                \end{itemize}
 
-                % The generation form needs two inputs: the number of nodes and the number of arcs.
-                % The maximum number of nodes is limited to 50 since a greater number would be disadvantageous for multiple reasons:
-
-                % \begin{itemize}
-                %     \item being the focus of this work strongly graphical, the drawn graph must be understandable: too many nodes or arcs will
-                %             limit this aspect;
-                %     \item to completely execute the algorithm the user would need to go through every step by manually clicking on the \textbf{Next} button 
-                %             (see Section \ref{subsec:interaction}): this would be frustrating when working with a very big graph;
-                %     \item the chosen drawing library is not completely suited to excessively customize the available graph entities: to draw them as it was
-                %             done, every entity needs to be rendered twice. So, even if the algorithm runs smoothly, when the number of entities is too big
-                %             the GUI shows some rendering slowness.
-                % \end{itemize}
-               
-                % Moreover, the number of nodes limits the number of arcs according to the following inequality:
-
-                % $$
-                %     m \leq \frac{n * (n-1)}{2}
-                % $$
-                
-                % where $m$ is the number of arcs and $n$ is the number of nodes.
-
-                % The generator will then create a graph with the following pattern:
-                
-                % \begin{figure}[h]
-                %     \includegraphics[scale=0.6]{graph2.png}
-                %     \centering
-                %     \begin{description}
-                %         \centering
-                %         \item[Figure 3] Random graph with n=6 and max m
-                %     \end{description}
-                % \end{figure}
-
-                % that is, node $i$-th's leaving star only contains nodes with id $> i$.
-
-                % This pattern ensures that graph's topology never contains loops, so that the algorithm can work without problems. 
-
-
+                The generation form only needs the number of constraints that the problem will contain.
+                The maximum number of constraints is limited to 50 since a greater number would be chaotic on the geometrical representation.
             \end{subsubsection}
 
-            \begin{subsubsection}{Canvas}
-                % After input is provided, the graph will be drawn in the canvas: its purpouse is to help understanding what is happening while the algorithm
-                % runs.
-                % Nodes are positioned in such a way that they would not interfere with the comprehensibility of the topology, however this is not always possible (e.g.
-                % nodes having too many entering or leaving arcs): to handle these situations, it is possible to manually move nodes.
-                % Each node is drawn as a circle containing its id in the center, and border colour of the circle indicates the status of the node: each status is
-                % described in the legend.
-                % Moreover, below each node a number can be found which represents the distance label of that node from the source.
-                % Arcs are drawn as arrows that start from their source and end to their target: they can assume a subset of statuses compared to nodes but the
-                % colours refer to the same legend of nodes. Near the center of each arc there can be found its cost, if its value is greater than zero.
-                % On the left-below corner of the canvas is placed a minimal menu of two elements:
-                % \begin{itemize}
-                %     \item a \textbf{sliding bar} to zoom the canvas in or out, useful when the number of nodes is too high to display them all;
-                %     \item a \textbf{center button} that computes the center of gravity of the graph and accordingly repositions the canvas;
-                % \end{itemize}
+            \begin{subsubsection}{Geometric representation}
+                After input is provided, the graph will be drawn in the canvas: its purpouse is to help understanding what is happening while the 
+                algorithm runs.
+                In this section we can see the polygon created by the constraints (admissible space of the continuous relaxation) and each one of the 
+                points with integer coordinates (admissible solutions of the integer problem).
+                At each step, the current solution is identified by a green point to better understand how it changes during the execution of the
+                algorithm.
+                Every contraint is defined by a red dotted line, and each one identifies a half-plane that contributes to show the admissible space
+                of the continuous relaxation.
             \end{subsubsection}
             
-            % \begin{figure}[h]
-            %     \includegraphics[scale=0.23]{gui2.png}
-            %     \centering
-            %     \begin{description}
-            %         \centering
-            %         \item[Figure 4] Application GUI example
-            %     \end{description}
-            % \end{figure}
+            \begin{figure}[h]
+                \includegraphics[scale=0.3]{gui2.png}
+                \centering
+                \begin{description}
+                    \centering
+                    \item[Figure 4] Application GUI example
+                \end{description}
+            \end{figure}
+
+            \begin{subsubsection}{Tableau}
+                On the top right section, during the execution of the algorithm, a tableau representation will be shown.
+                It keeps track of the various data structures used within this implementation such as:
+                \begin{itemize}
+                    \item the negative of the current value of the objective function;
+                    \item the current costs of the basic variables;
+                    \item the current costs of the nonbasic variables;
+                    \item the current value of the basic variables;
+                    \item the current value of the coefficients of basic variables;
+                    \item the current value of the coefficients of nonbasic variables;
+                \end{itemize}
+                
+                To not be excessively verbose, not all the changes on the tableau are reflected by the graphical user iterface, for example
+                the pivoting operation is not completely shown: at each step the GUI can show the column gave by the entering nonbasic variable,
+                the row gave by the leaving basic variable (if both are highlighted, the pivot value is highlighted too), and the new tableau obtained
+                after the pivoting operation.
+            \end{subsubsection}
 
             \begin{subsubsection}{Interaction section}
                 \label{subsec:interaction}
 
-                % Below the canvas there are some elements that help to iteract with the application:
-                % \begin{itemize}
-                %     \item the \textbf{clear button} reverts the current state of the application and sends the user back to the input page;
-                %     \item the \textbf{reset button} reverts the state the application to the point where input was just being provided;
-                %     \item the \textbf{download button} allows to download the current drawn graph as a JSON file;
-                %     \item the \textbf{legend} describes the colours in the canvas and allows to change them by clicking on each status;
-                %     \item the \textbf{navigation buttons} are used to keep executing the algorithm and visualize its history.
-                %     \item the \textbf{source/sink(s) selectors} are used to specify the source node and the target node(s).
-                % \end{itemize}
+                Below the canvas there are some elements that help to iteract with the application:
+                \begin{itemize}
+                    \item the \textbf{clear button} reverts the current state of the application and sends the user back to the input page;
+                    \item the \textbf{download button} allows to download the current drawn graph as a JSON file;
+                    \item the \textbf{navigation buttons} are used to keep executing the algorithm and visualize its history.
+                \end{itemize}
 
-                % Every time the algorithm has to keep executing, the user need to press on the \textbf{Next} button (the navigation button on the right): the
-                % new state is computed only once then it is stored within a proper data structure. 
-                % By storing every state, the application allows to navigate algorithm execution history back and forth.
+                Every time the algorithm has to keep executing, the user need to press on the \textbf{Next} button (the navigation button on the 
+                right): the new state is computed only once then it is stored within a proper data structure. 
+                By storing every state, the application allows to navigate algorithm execution history back and forth.
 
             \end{subsubsection}
 
-            \begin{subsubsection}{Info section}
-                % The last section provides written descriptions and tabular representations of what it is happening in a given state of the algorithm.
-                
-                % On the left, there is a \textbf{Info} box that shows in which state the algorithm is with the phase number, step number and substep number:
-                % these three numbers help the user referring to a specific point in time within an execution. 
-                % The last part of this section is a written list of actions that were performed during that particular state: this information is stored with other 
-                % ones regarding the state (such as status of nodes and arcs, temporary paths, distances).
+            \begin{subsubsection}{Formal problem representation}
+                Bottom left section is dedicated to show the starting problem in canonical form. 
+                To draw this part of the GUI was used a external library that parses a LaTeX document.
+                The LaTeX document is computed right after the input is provided, and it is not changed by the application during algorithm execution.
+            \end{subsubsection}
 
-                % On the right, the application shows a \textbf{Paths} table that lists the path to reach every node discovered until that point in time and their
-                % distance from the source. 
-                % If the selected state is the last performed by the algorithm, it is also possible to click on one particular row to display that path on the canvas.
+            \begin{subsubsection}{Info box}
+                The last section provides written descriptions of what it is happening in a given state of the algorithm.
+                Every step produces a change in almost all the section of the graphical user interface (except for the formal problem representation 
+                section, that only shows the starting problem), which is intuitevely understandable thanks to its graphical and geometrical nature; 
+                however, there are steps that cannot be effectively communicated through figures and need a written explanation.
             \end{subsubsection}
         \end{subsection}
     \end{section}
 
     \begin{section}{Results and performances}
-        % This application can successfully run a (properly customized) classical implementation of Dijkstra's algorithm for shortest path problems. 
-        % It was tested on a set of graphs that satisfy the topology provided in Section \ref{subsec:input} and on \textbf{IBM ILOG CPLEX Optimization Studio}
-        % \cite{web:cplex}: to compare the results a Python script (see GitHub repository \cite{github:project}) was developed to convert JSON files to CPLEX 
-        % models and then the resulting objective functions were compared. 
-        % All the tests returned the same results on both the web application and IBM ILOG CPLEX Optimization Studio.
+        This application can successfully run a (properly customized) classical implementation of cutting-plane algorithm for integer linear 
+        programming problems. 
+        It was tested on a set of problems provided within the \textbf{book}\cite{book} and on \textbf{IBM ILOG CPLEX Optimization Studio}
+        \cite{web:cplex}: to compare the results a Python script (see GitHub repository \cite{github:project}) was developed to convert JSON files 
+        to CPLEX models and then the resulting objective functions were compared. 
+        All the tests returned the same results on both the web application and IBM ILOG CPLEX Optimization Studio.
 
-        % The application does not allow to jump to the end of the execution since its objective is to illustrate how the algorithm behaves at every step, so its 
-        % performaces were not taken into account (the principal data structure used were lists). 
-        % However, it is true that at every step the graph needs to be drawn again because of the library\cite{github:digraph} that was used; moreover the 
-        % computational effort needed to draw the graph further increases because the library does not provide a conventional way to heavy customize graph's entities, 
-        % so each one needs to be drawn again after first rendering.
-        % This is not perceivable on a simple graph, but the application shows its limits while working with too large inputs.
+        The application does not allow to jump to the end of the execution since its objective is to illustrate how the algorithm behaves at every 
+        step, so its performaces were not taken into account (multiple matrixes instead of a unique one containing the tableau). 
+        Since the objective of the work was to show the progression of the algorithm from a geometrical point of view, besides the support section
+        added (info box, tableau representation, etc.), the problems solved were limited to two decisional variables (obviously limiting their 
+        complexity), so the principal challange to the performaces was only given by the number of contraints on a given problem (that potentially 
+        increases during the execution): due to this limits, this work did not show any particular performances' issue.
     \end{section}
 
     \begin{section}{Conclusions}
-        % The developed web application described in this work allows to correctly run Dijkstra's classical algorithm on graphs provided as JSON files or generated
-        % through the application's generator, and to see a step-by-step execution thanks to a user-friendly interface that at each iteration draws the graph and 
-        % describes what it is really happening from the beginning to the end. 
-        % Moreover it is possible not only to proceed forward into the execution, but to go back in time, too: this feature allows a better understanding and analysis 
-        % of the algorithm and provide a different perspective on particular topologies. 
-        % The possibility to select and highlight a particular shortest path allows to check multiple targets and analyze how they are reached when stating from a 
-        % particular source. 
+        The developed web application described in this work allows to correctly run cutting-plane algorithm on problems provided as JSON files 
+        or generated through the application's generator, and to see a step-by-step execution thanks to a user-friendly interface that at each 
+        iteration draws a geometrical representation and describes what it is really happening from the beginning to the end. 
+        Moreover it is possible not only to proceed forward into the execution, but to go back in time, too: this feature allows a better 
+        understanding and analysis of the algorithm and provides a different perspective.
 
-        % At this point in development, the application is surely useful when studying Dijkstra's algorithm, but there are many optimizations and features
-        % that can be considered to improve this work. 
-        % A custom drawing library developed to precisely address the needs of the application, a better organization of the interface to improve user experience, 
-        % multiple algorithms to choose, support for other input formats (e.g.: direct support for CPLEX models): this are just some example of how the application 
-        % can be extended in the future.
+        At this point in development, the application is surely useful when studying cutting-plane algorithm, but there are many optimizations
+        and features that can be considered to improve this work. 
+        An optimized algorithm to generate the polygon that defines the admissible space, a better organization of the interface to improve 
+        user experience, multiple algorithms to choose, support for other input formats (e.g.: direct support for CPLEX models): this are just 
+        some example of how the application can be extended in the future.
     \end{section}
 
     \begin{thebibliography}{7}
@@ -604,7 +578,7 @@
         \bibitem{github:project} 
         GitHub,
         \textit{Project Repository},
-        \url{https://github.com/riccardolocci/NFO}
+        \url{https://github.com/riccardolocci/DS}
 
     \end{thebibliography}
 
