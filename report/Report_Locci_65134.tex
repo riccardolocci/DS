@@ -421,6 +421,7 @@
             The new program is then solved and the process is repeated until an integer solution is found.
             \cite{wiki:cuttingplane}
 
+<<<<<<< HEAD
             Using the simplex method to solve a linear program produces a set of equations of the form:
             \begin{equation*}
                 x_i + \sum{\overline{a}_{ij}x_j} = \overline{b}_i
@@ -645,6 +646,22 @@
                 \end{description}
             \end{figure}
 
+=======
+        \begin{subsection}{Web application GUI}
+            Within this section we will show how the application appears and which parts compose the Graphical User Iterface:
+            we will talk about all the possible interactions and features, and how they influence the understanding of the 
+            algorithm.
+            
+            \begin{figure}[h]
+                \includegraphics[scale=0.23]{gui1.png}
+                \centering
+                \begin{description}
+                    \centering
+                    \item[Figure 2] Landing page and input choice 
+                \end{description}
+            \end{figure}
+
+>>>>>>> DS-17: Report finished
             \begin{subsubsection}{Input choices}
                 \label{subsec:input}
                 First page of the web application\cite{web:app} allows multiple ways to provide a problem as input for the algorithm. 
@@ -710,11 +727,24 @@
                     \item the \textbf{navigation buttons} are used to keep executing the algorithm and visualize its history.
                 \end{itemize}
 
+<<<<<<< HEAD
                 Every time the algorithm has to keep executing, the user need to press on the \textbf{Next} button (the navigation button on the 
                 right): the new state is computed only once then it is stored within a proper data structure. 
                 By storing every state, the application allows to navigate algorithm execution history back and forth.
 
             \end{subsubsection}
+=======
+                Below the canvas there are some elements that help to iteract with the application:
+                \begin{itemize}
+                    \item the \textbf{clear button} reverts the current state of the application and sends the user back to the input page;
+                    \item the \textbf{download button} allows to download the current drawn graph as a JSON file;
+                    \item the \textbf{navigation buttons} are used to keep executing the algorithm and visualize its history.
+                \end{itemize}
+
+                Every time the algorithm has to keep executing, the user need to press on the \textbf{Next} button (the navigation button on the 
+                right): the new state is computed only once then it is stored within a proper data structure. 
+                By storing every state, the application allows to navigate algorithm execution history back and forth.
+>>>>>>> DS-17: Report finished
 
             \begin{subsubsection}{Formal problem representation}
                 Bottom left section is dedicated to show the starting problem in canonical form. 
@@ -722,6 +752,15 @@
                 The LaTeX document is computed right after the input is provided, and it is not changed by the application during algorithm execution.
             \end{subsubsection}
 
+<<<<<<< HEAD
+=======
+            \begin{subsubsection}{Formal problem representation}
+                Bottom left section is dedicated to show the starting problem in canonical form. 
+                To draw this part of the GUI was used a external library that parses a LaTeX document.
+                The LaTeX document is computed right after the input is provided, and it is not changed by the application during algorithm execution.
+            \end{subsubsection}
+
+>>>>>>> DS-17: Report finished
             \begin{subsubsection}{Info box}
                 The last section provides written descriptions of what it is happening in a given state of the algorithm.
                 Every step produces a change in almost all the section of the graphical user interface (except for the formal problem representation 
