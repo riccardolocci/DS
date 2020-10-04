@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import PlotGraph from './PlotGraph';
 
-// import Dropzone from './Dropzone';
+import Dropzone from './Dropzone';
 import ExamplesManager from './ExamplesManager';
 import InfoBox from './InfoBox';
 import OriginalProblem from './OriginalProblem';
-// import RandomManager from './RandomManager';
+import RandomManager from './RandomManager';
 import Tableau from './Tableau';
 
 import { Button, Grid, Paper } from '@material-ui/core';
+import { GetApp } from '@material-ui/icons';
 
 import { formatNumber, getY } from '../utils';
 
@@ -122,6 +123,7 @@ let LPP = () => {
         setLoading(false);
 
         setFile(thisFile);
+        console.log('startLines', startLines)
         setLines(startLines);
         setPolygon(startPolygon);
 
@@ -338,6 +340,14 @@ let LPP = () => {
         setHistory([]);
         setPage(0);
         setFinished(false);
+    }
+
+    let onDownload = () => {
+        let link = document.createElement('a');
+        link.href =  window.URL.createObjectURL(new Blob([JSON.stringify(file)],{type: 'application/json'}));
+        link.setAttribute('download', `problem-${file.subjectTo.A.length}-${Date.now()}`);
+        document.body.appendChild(link);
+        link.click();
     }
 
     let onIntegerSimplexAlgorithm = () => {
@@ -653,29 +663,29 @@ let LPP = () => {
         }
     }
 
-    // let showMessage = message => {
-    //     setMessage(message);
-    //     setTimeout(() => setMessage(''), 5000);
-    // }
+    let showMessage = message => {
+        setMessage(message);
+        setTimeout(() => setMessage(''), 5000);
+    }
 
     return (
         <>
             {!file && <>
-                {/* <div className={file ? classes.dropClosed : classes.drop}>
+                <div className={file ? classes.dropClosed : classes.drop}>
                     <Dropzone
                         getFile={getFile}
                         hide={file}
                         showMessage={showMessage}
                     />
-                </div> */}
+                </div>
 
                 <div className={file ? classes.dropClosed : classes.generator}>
                     <ExamplesManager getFile={getFile} loading={loading} />
                 </div>
 
-                {/* <div className={file ? classes.dropClosed : classes.generator}>
+                <div className={file ? classes.dropClosed : classes.generator}>
                     <RandomManager getFile={getFile} loading={loading} />
-                </div> */}
+                </div>
                 
                 <div className={classes.spacer}>
                     <Paper className={classes.paper}>
@@ -699,6 +709,7 @@ let LPP = () => {
                         </Grid>
                         <Grid item xs={12}>
                             <Button variant='outlined' onClick={onClear}>CLEAR</Button>
+                            <Button className="SPP-button" onClick={() => onDownload()}><GetApp/></Button>
                             <Button variant='outlined' disabled={page <= 0} onClick={() => handleHistory()}>{"<"}</Button>
                             <Button variant='outlined' disabled={!history[page+1] && history[page] && history[page].finished} onClick={() => handleHistory(true)}>{">"}</Button>
                             {history[page] && page}

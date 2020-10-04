@@ -1,5 +1,37 @@
 export const formatNumber = (num) => Math.round((num + Number.EPSILON) * 10000) / 10000;
 
+export const generate = (m) => {
+    let start = {
+        "variables": ["x1", "x2"],
+        "objectiveFunction": [],
+        "subjectTo": {
+            "A": [],
+            "b": [],
+            "sign": []
+        }
+    }
+    start.objectiveFunction = generateVector();
+    for(let i=0; i<m; i++){
+        start.subjectTo.A.push(generateVector());
+        start.subjectTo.sign.push(generateSign());
+        start.subjectTo.b.push(generateCoefficient());
+    }
+
+    console.log(JSON.stringify(start));
+
+    return start;
+}
+
+const generateCoefficient = (max=10) => Math.floor(Math.random() * 2 * max + 1) - max;
+
+const generateSign = () => Math.random() < 0.5 ? -1 : 1;
+
+const generateVector = (n=2) => {
+    let arr = [];
+    while(arr.length < n) arr.push(generateCoefficient());
+    return arr;
+}
+
 export const getPoint = (xBLables, bOverbar) => {
     let x1Idx = xBLables.indexOf('x1');
     let x2Idx = xBLables.indexOf('x2');
